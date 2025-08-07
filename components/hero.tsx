@@ -13,7 +13,7 @@ export function Hero() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-600 text-white font-bold text-xl">
                   SM
                 </div>
-                <span className="text-sm font-medium">Since 1995</span>
+                <span className="text-sm font-medium">Since 2023</span>
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
                 Pure & Natural
