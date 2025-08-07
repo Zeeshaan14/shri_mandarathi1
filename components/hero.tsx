@@ -61,7 +61,7 @@ export function Hero() {
               />
             </div>
             <div className="absolute -bottom-6 -left-6 bg-white rounded-lg p-4 shadow-lg">
-              <p className="text-2xl font-bold text-amber-600">25+</p>
+              <p className="text-2xl font-bold text-amber-600">3+</p>
               <p className="text-sm text-gray-600">Years of Excellence</p>
             </div>
           </div>
