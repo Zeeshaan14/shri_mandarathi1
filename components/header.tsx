@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X } from 'lucide-react'
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -19,12 +19,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
-        <Link href="#home" className="flex items-center space-x-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-600 text-white font-bold text-lg">
-            SM
-          </div>
+        <Link href="#home" className="flex items-center space-x-3">
+          <img src="/sm-logo.jpeg" alt="SM Logo" className="h-12 w-auto rounded-lg" />
           <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-amber-800">Shri Mandarathi Products</h1>
+            <h1 className="text-lg font-bold text-gray-900">Shri Mandarathi Products</h1>
             <p className="text-xs text-muted-foreground">Premium Oil & Flour Mill</p>
           </div>
         </Link>
