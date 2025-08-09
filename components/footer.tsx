@@ -15,7 +15,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-gray-400 text-sm">
-              Providing pure, natural oil products with traditional methods and modern quality standards since 1995.
+              Providing pure, natural oil products with traditional methods and modern quality standards since 2023.
             </p>
           </div>
 
