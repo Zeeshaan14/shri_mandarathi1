@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useAuthStore } from "@/lib/store"
+import { AuthApi } from "@/lib/api"
 import { toast } from "sonner"
 
 export default function LoginPage() {
@@ -30,24 +31,13 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Mock login - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock user data
-      const mockUser = {
-        id: "1",
-        name: "John Doe",
-        email: formData.email,
-        role: "CUSTOMER" as const,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      login(mockUser)
+      const result = await AuthApi.login(formData.email, formData.password)
+      login(result.user, result.token)
       toast.success("Login successful!")
       router.push("/")
     } catch (error) {
-      toast.error("Login failed. Please try again.")
+      const message = error instanceof Error ? error.message : "Login failed. Please try again."
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }

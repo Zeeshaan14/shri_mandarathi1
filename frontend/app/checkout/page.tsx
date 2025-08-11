@@ -15,12 +15,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, ShoppingCart, Truck, CreditCard, Phone, MapPin, User, Loader2 } from "lucide-react"
 import { useCartStore, useAuthStore } from "@/lib/store"
+import { OrdersApi } from "@/lib/api"
 import { toast } from "sonner"
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, getTotalPrice, clearCart } = useCartStore()
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, token } = useAuthStore() as any
   const [isLoading, setIsLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("cod")
   const [agreeToTerms, setAgreeToTerms] = useState(false)
@@ -76,23 +77,27 @@ export default function CheckoutPage() {
     setIsLoading(true)
 
     try {
-      // Mock order processing - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Create order data
-      const orderData = {
-        items,
-        customer: formData,
-        paymentMethod,
-        total: totalAmount,
-        deliveryCharge,
-        orderDate: new Date().toISOString(),
+      if (!isAuthenticated || !user?.id || !token) {
+        toast.error("Please login to place order")
+        return
       }
 
-      // In a real app, you would send this to your backend
-      console.log("Order Data:", orderData)
+      const payload = {
+        items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+        shipping: {
+          fullName: formData.name,
+          phone: formData.phone,
+          line1: formData.address,
+          line2: formData.landmark || "",
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.pincode,
+          country: "India",
+        },
+      }
 
-      // Clear cart and redirect to success page
+      await OrdersApi.create(payload, token)
+
       clearCart()
       toast.success("Order placed successfully!")
       router.push("/order-success")
@@ -305,7 +310,7 @@ export default function CheckoutPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-start space-x-2">
-                    <Checkbox id="terms" checked={agreeToTerms} onCheckedChange={setAgreeToTerms} />
+                    <Checkbox id="terms" checked={agreeToTerms} onCheckedChange={(v) => setAgreeToTerms(Boolean(v))} />
                     <Label htmlFor="terms" className="text-sm leading-relaxed">
                       I agree to the{" "}
                       <Link href="/terms" className="text-amber-600 hover:text-amber-700">

@@ -1,13 +1,16 @@
 import { prisma1 } from "../utils/prisma.js";
 // Create a new order
 export const createOrder = async (req, res) => {
-    const { items } = req.body;
+    const { items, shipping } = req.body;
     const userId = req.user?.userId;
     if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
     }
     if (!items || items.length === 0) {
         return res.status(400).json({ message: "No items in order" });
+    }
+    if (!shipping || !shipping.fullName || !shipping.phone || !shipping.line1 || !shipping.city || !shipping.state || !shipping.postalCode || !shipping.country) {
+        return res.status(400).json({ message: "Missing shipping details" });
     }
     try {
         const order = await prisma1.$transaction(async (tx) => {
@@ -41,6 +44,14 @@ export const createOrder = async (req, res) => {
                     userId,
                     total,
                     status: "PENDING",
+                    shippingFullName: shipping.fullName,
+                    shippingPhone: shipping.phone,
+                    shippingLine1: shipping.line1,
+                    shippingLine2: shipping.line2,
+                    shippingCity: shipping.city,
+                    shippingState: shipping.state,
+                    shippingPostalCode: shipping.postalCode,
+                    shippingCountry: shipping.country,
                     items: {
                         create: orderItemsData,
                     },

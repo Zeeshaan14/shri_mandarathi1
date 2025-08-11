@@ -21,7 +21,9 @@ async function getOrCreateCart(userId: string) {
 // Add item to cart
 export const addToCart = async (req: Request, res: Response) => {
   try {
-    const { userId, variantId, quantity } = req.body;
+    const authUser = (req as any).user as { userId: string } | undefined
+    const userId = authUser?.userId
+    const { variantId, quantity } = req.body;
 
     if (!userId || !variantId || typeof quantity !== "number" || quantity < 1) {
       return res.status(400).json({ message: "Missing or invalid fields" });
@@ -63,7 +65,8 @@ export const addToCart = async (req: Request, res: Response) => {
 // Get user's cart with items and product details
 export const getCart = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const authUser = (req as any).user as { userId: string } | undefined
+    const userId = authUser?.userId
     if (!userId) return res.status(400).json({ message: "User ID is required" });
 
     const cart = await prisma.cart.findUnique({
@@ -95,10 +98,22 @@ export const updateCartItem = async (req: Request, res: Response) => {
   try {
     const { cartItemId } = req.params;
     const { quantity } = req.body;
+    const authUser = (req as any).user as { userId: string } | undefined;
+    const userId = authUser?.userId;
 
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     if (!cartItemId) return res.status(400).json({ message: "Cart item ID is required" });
     if (typeof quantity !== "number" || quantity < 1)
       return res.status(400).json({ message: "Quantity must be at least 1" });
+
+    // Ensure the cart item belongs to the authenticated user's cart
+    const cartItem = await prisma.cartItem.findUnique({
+      where: { id: cartItemId },
+      include: { cart: true },
+    });
+
+    if (!cartItem) return res.status(404).json({ message: "Cart item not found" });
+    if (cartItem.cart.userId !== userId) return res.status(403).json({ message: "Forbidden" });
 
     const updatedItem = await prisma.cartItem.update({
       where: { id: cartItemId },
@@ -116,7 +131,20 @@ export const updateCartItem = async (req: Request, res: Response) => {
 export const removeCartItem = async (req: Request, res: Response) => {
   try {
     const { cartItemId } = req.params;
+    const authUser = (req as any).user as { userId: string } | undefined;
+    const userId = authUser?.userId;
+
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     if (!cartItemId) return res.status(400).json({ message: "Cart item ID is required" });
+
+    // Ensure the cart item belongs to the authenticated user's cart
+    const cartItem = await prisma.cartItem.findUnique({
+      where: { id: cartItemId },
+      include: { cart: true },
+    });
+
+    if (!cartItem) return res.status(404).json({ message: "Cart item not found" });
+    if (cartItem.cart.userId !== userId) return res.status(403).json({ message: "Forbidden" });
 
     await prisma.cartItem.delete({
       where: { id: cartItemId },
@@ -132,7 +160,8 @@ export const removeCartItem = async (req: Request, res: Response) => {
 // Clear entire cart for a user
 export const clearCart = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const authUser = (req as any).user as { userId: string } | undefined
+    const userId = authUser?.userId
     if (!userId) return res.status(400).json({ message: "User ID is required" });
 
     const cart = await prisma.cart.findUnique({ where: { userId } });

@@ -4,12 +4,55 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react"
-import { useCartStore } from "@/lib/store"
+import { useCartStore, useAuthStore } from "@/lib/store"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 
 export function CartSidebar() {
-  const { items, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart } = useCartStore()
+  const { items, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart, fetchCart, updateCartItemApi, removeCartItemApi, clearCartApi } =
+    useCartStore()
+  const { user, isAuthenticated } = useAuthStore()
+
+  const handleDecrease = async (variantId: string, quantity: number) => {
+    const item = items.find((i) => i.variantId === variantId)
+    if (!item) return
+    updateQuantity(variantId, Math.max(1, quantity))
+    if (isAuthenticated && user?.id && item.id) {
+      try {
+        await updateCartItemApi(item.id, variantId, Math.max(1, quantity))
+      } catch {}
+    }
+  }
+
+  const handleIncrease = async (variantId: string, quantity: number) => {
+    const item = items.find((i) => i.variantId === variantId)
+    if (!item) return
+    updateQuantity(variantId, quantity)
+    if (isAuthenticated && user?.id && item.id) {
+      try {
+        await updateCartItemApi(item.id, variantId, quantity)
+      } catch {}
+    }
+  }
+
+  const handleRemove = async (variantId: string) => {
+    const item = items.find((i) => i.variantId === variantId)
+    removeItem(variantId)
+    if (isAuthenticated && user?.id) {
+      try {
+        await removeCartItemApi(item?.id || "", variantId)
+      } catch {}
+    }
+  }
+
+  const handleClear = async () => {
+    clearCart()
+    if (isAuthenticated && user?.id) {
+      try {
+        await clearCartApi(user.id)
+      } catch {}
+    }
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -62,7 +105,7 @@ export function CartSidebar() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 bg-transparent"
-                        onClick={() => updateQuantity(item.variantId, Math.max(1, item.quantity - 1))}
+                        onClick={() => handleDecrease(item.variantId, Math.max(1, item.quantity - 1))}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -71,7 +114,7 @@ export function CartSidebar() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 bg-transparent"
-                        onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                        onClick={() => handleIncrease(item.variantId, item.quantity + 1)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
@@ -79,7 +122,7 @@ export function CartSidebar() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-700 bg-transparent"
-                        onClick={() => removeItem(item.variantId)}
+                        onClick={() => handleRemove(item.variantId)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
