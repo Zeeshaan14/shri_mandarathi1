@@ -1,8 +1,13 @@
 import { Router } from "express";
+import { createProduct, deleteProduct, getProductById, getProducts, updateProduct } from "../controller/product.controller.js";
 import { isAdmin, verifyToken } from "../middleware/auth.middleware.js";
-import { createProduct, getProducts } from "../controller/product.controller.js";
 const productRouter = Router();
-productRouter.post("/", verifyToken, isAdmin, createProduct);
+// Public
 productRouter.get("/", getProducts);
+productRouter.get("/:id", getProductById);
+// Admin only
+productRouter.post("/", verifyToken, isAdmin, createProduct);
+productRouter.put("/:id", verifyToken, isAdmin, updateProduct);
+productRouter.delete("/:id", verifyToken, isAdmin, deleteProduct);
 export default productRouter;
 //# sourceMappingURL=product.routes.js.map

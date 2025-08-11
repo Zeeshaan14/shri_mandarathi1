@@ -4,15 +4,15 @@ import { isAdmin, verifyToken } from "../middleware/auth.middleware.js";
 
 
 
-const router: Router = Router();
+const productRouter: Router = Router();
 
 // Public
-router.get("/", getProducts);
-router.get("/:id", getProductById);
+productRouter.get("/", getProducts);
+productRouter.get("/:id", getProductById);
 
 // Admin only
-router.post("/", verifyToken, isAdmin, createProduct);
-router.put("/:id", verifyToken, isAdmin, updateProduct);
-router.delete("/:id", verifyToken, isAdmin, deleteProduct);
+productRouter.post("/", verifyToken, isAdmin, createProduct);
+productRouter.put("/:id", verifyToken, isAdmin, updateProduct);
+productRouter.delete("/:id", verifyToken, isAdmin, deleteProduct);
 
-export default router;
+export default productRouter;
