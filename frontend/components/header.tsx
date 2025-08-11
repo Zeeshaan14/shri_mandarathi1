@@ -59,6 +59,9 @@ export function Header() {
                   </Link>
                 </Button>
               )}
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/account">My Account</Link>
+              </Button>
               <Button variant="outline" size="sm" onClick={logout}>
                 Logout
               </Button>
@@ -109,6 +112,9 @@ export function Header() {
                           </Link>
                         </Button>
                       )}
+                      <Button asChild variant="outline" size="sm" className="w-full bg-transparent">
+                        <Link href="/account">My Account</Link>
+                      </Button>
                       <Button variant="outline" size="sm" onClick={logout} className="w-full bg-transparent">
                         Logout
                       </Button>
