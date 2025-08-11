@@ -114,7 +114,10 @@ export const getOrders = async (req, res) => {
     try {
         const orders = await prisma1.order.findMany({
             where: user.role === "ADMIN" ? {} : { userId: user.id },
-            include: { items: { include: { variant: true } } },
+            include: {
+                user: true,
+                items: { include: { variant: true } },
+            },
         });
         res.json(orders);
     }
