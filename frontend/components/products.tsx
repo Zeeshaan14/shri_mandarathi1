@@ -9,7 +9,7 @@ export function Products() {
       name: "Tejaswi Deepam Oil",
       description:
         "Premium quality oil perfect for traditional lamps and religious ceremonies. Made with the finest ingredients for a pure, long-lasting flame that brings divine light to your prayers.",
-      image: "/tejaswi-oil.jpeg",
+      image: "/tej.png",
       features: ["Long burning", "Smokeless", "Pure ingredients", "Traditional recipe"],
       category: "Lamp Oil",
     },
@@ -17,7 +17,7 @@ export function Products() {
       name: "Sri Mandarathi Pure Coconut Oil",
       description:
         "Extracted from fresh coconuts using traditional methods. Perfect for cooking, hair care, and skincare. No additives, no preservatives - just pure, natural goodness.",
-      image: "/product-bottle-3.jpeg",
+      image: "/Gemini_Generated_Image_byjofcbyjofcbyjo.png",
       features: ["100% Pure", "Cold pressed", "No chemicals", "Multi-purpose"],
       category: "Coconut Oil",
     },
@@ -84,7 +84,7 @@ export function Products() {
           <h3 className="text-2xl font-bold text-center text-gray-900 mb-8">Our Production</h3>
           <div className="grid md:grid-cols-4 gap-6">
             <div className="rounded-lg overflow-hidden shadow-lg">
-              <img src="/tejaswi-oil.jpeg" alt="Tejaswi Deepam Oil bottles" className="w-full h-64 object-cover" />
+              <img src="/tej.png" alt="Tejaswi Deepam Oil bottles" className="w-full h-64 object-cover" />
             </div>
             <div className="rounded-lg overflow-hidden shadow-lg">
               <img

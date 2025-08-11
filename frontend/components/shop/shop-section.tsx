@@ -23,7 +23,7 @@ const mockProducts: Product[] = [
       "100% pure coconut oil extracted using traditional methods. Perfect for cooking, hair care, and skincare.",
     categoryId: "1",
     category: mockCategories[0],
-    imageUrl: "/product-bottle-3.jpeg",
+    imageUrl: "Gemini_Generated_Image_byjofcbyjofcbyjo.png",
     variations: [
       {
         id: "1-1",
@@ -32,7 +32,7 @@ const mockProducts: Product[] = [
         price: 150,
         stock: 50,
         sku: "SM-CO-250",
-        imageUrl: "/product-bottle-3.jpeg",
+        imageUrl: "Gemini_Generated_Image_byjofcbyjofcbyjo.png",
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -69,7 +69,7 @@ const mockProducts: Product[] = [
       "Premium quality oil perfect for traditional lamps and religious ceremonies. Long-lasting and smokeless.",
     categoryId: "2",
     category: mockCategories[1],
-    imageUrl: "/tejaswi-oil.jpeg",
+    imageUrl: "/tej.png",
     variations: [
       {
         id: "2-1",
@@ -78,7 +78,7 @@ const mockProducts: Product[] = [
         price: 180,
         stock: 40,
         sku: "TJ-DO-500",
-        imageUrl: "/tejaswi-oil.jpeg",
+        imageUrl: "/tej.png",
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -89,7 +89,7 @@ const mockProducts: Product[] = [
         price: 340,
         stock: 20,
         sku: "TJ-DO-1000",
-        imageUrl: "/tejaswi-oil.jpeg",
+        imageUrl: "/tej.png",
         createdAt: new Date(),
         updatedAt: new Date(),
       },
