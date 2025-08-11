@@ -26,7 +26,7 @@ export function Hero() {
                   className="h-16 w-auto rounded-lg bg-white p-1"
                 />
                 <span className="text-sm font-medium text-white bg-amber-600 px-3 py-1 rounded-full">
-                  Since 1995
+                  Since 2023
                 </span>
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
@@ -82,7 +82,7 @@ export function Hero() {
     />
   </div>
   <div className="absolute -bottom-8 -left-8 bg-white rounded-lg p-4 shadow-lg">
-    <p className="text-3xl font-bold text-amber-600">25+</p>
+    <p className="text-3xl font-bold text-amber-600">2+</p>
     <p className="text-sm text-gray-600">Years of Excellence</p>
   </div>
 </div>
