@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ShoppingCart, Star, Plus, Minus } from "lucide-react"
 import type { Product, ProductVariant } from "@/lib/types"
-import { useCartStore } from "@/lib/store"
+import { useCartStore, useAuthStore } from "@/lib/store"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -18,16 +18,22 @@ export function ProductCard({ product }: ProductCardProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(product.variations[0] || null)
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((state) => state.addItem)
+  const addToCartApi = useCartStore((state) => state.addToCartApi)
+  const { user, isAuthenticated } = useAuthStore()
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedVariant) return
-
-    addItem({
-      variantId: selectedVariant.id,
-      variant: selectedVariant,
-      quantity,
-    })
-
+    // Update local store immediately for snappy UX
+    addItem({ variantId: selectedVariant.id, variant: selectedVariant, quantity })
+    // If authenticated, sync with backend cart
+    if (isAuthenticated && user?.id) {
+      try {
+        await addToCartApi(user.id, selectedVariant.id, quantity)
+      } catch (e) {
+        // rollback not implemented; fetchCart on next open ensures consistency
+        console.error("Failed to sync cart", e)
+      }
+    }
     toast.success(`Added ${product.name} (${selectedVariant.size}) to cart!`)
   }
 

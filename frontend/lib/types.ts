@@ -60,6 +60,7 @@ export interface OrderItem {
 }
 
 export interface CartItem {
+  id?: string
   variantId: string
   variant: ProductVariant
   quantity: number

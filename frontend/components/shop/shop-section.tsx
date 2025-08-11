@@ -8,109 +8,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Filter } from "lucide-react"
 import { ProductCard } from "./product-card"
 import type { Product, Category } from "@/lib/types"
-
-// Mock data - replace with actual API calls
-const mockCategories: Category[] = [
-  { id: "1", name: "Coconut Oil", createdAt: new Date(), updatedAt: new Date() },
-  { id: "2", name: "Lamp Oil", createdAt: new Date(), updatedAt: new Date() },
-]
-
-const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "Sri Mandarathi Pure Coconut Oil",
-    description:
-      "100% pure coconut oil extracted using traditional methods. Perfect for cooking, hair care, and skincare.",
-    categoryId: "1",
-    category: mockCategories[0],
-    imageUrl: "Gemini_Generated_Image_byjofcbyjofcbyjo.png",
-    variations: [
-      {
-        id: "1-1",
-        productId: "1",
-        size: "250ml",
-        price: 150,
-        stock: 50,
-        sku: "SM-CO-250",
-        imageUrl: "Gemini_Generated_Image_byjofcbyjofcbyjo.png",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: "1-2",
-        productId: "1",
-        size: "500ml",
-        price: 280,
-        stock: 30,
-        sku: "SM-CO-500",
-        imageUrl: "/product-bottle-1.jpeg",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: "1-3",
-        productId: "1",
-        size: "1L",
-        price: 520,
-        stock: 25,
-        sku: "SM-CO-1000",
-        imageUrl: "/product-bottle-2.jpeg",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "Tejaswi Deepam Oil",
-    description:
-      "Premium quality oil perfect for traditional lamps and religious ceremonies. Long-lasting and smokeless.",
-    categoryId: "2",
-    category: mockCategories[1],
-    imageUrl: "/tej.png",
-    variations: [
-      {
-        id: "2-1",
-        productId: "2",
-        size: "500ml",
-        price: 180,
-        stock: 40,
-        sku: "TJ-DO-500",
-        imageUrl: "/tej.png",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: "2-2",
-        productId: "2",
-        size: "1L",
-        price: 340,
-        stock: 20,
-        sku: "TJ-DO-1000",
-        imageUrl: "/tej.png",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
+import { ProductsApi } from "@/lib/api"
 
 export function ShopSection() {
-  const [products, setProducts] = useState<Product[]>(mockProducts)
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts)
-  const [categories] = useState<Category[]>(mockCategories)
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("name")
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>("")
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setError("")
+      try {
+        const [prods, cats] = await Promise.all([
+          ProductsApi.list(),
+          ProductsApi.categories(),
+        ])
+
+        const normalized: Product[] = (prods || []).map((p: any) => ({
+          ...p,
+          variations: (p.variations || []).map((v: any) => ({
+            ...v,
+            price: typeof v.price === "string" ? Number(v.price) : v.price,
+          })),
+        }))
+
+        setProducts(normalized)
+        setFilteredProducts(normalized)
+        setCategories(cats || [])
+      } catch (e) {
+        console.error("Failed to load products/categories", e)
+        setError("Could not load products. Please try again later.")
+      }
+      setLoading(false)
+    }
+    load()
+  }, [])
 
   useEffect(() => {
     let filtered = products
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
         (product) =>
@@ -119,12 +61,10 @@ export function ShopSection() {
       )
     }
 
-    // Filter by category
     if (selectedCategory !== "all") {
       filtered = filtered.filter((product) => product.categoryId === selectedCategory)
     }
 
-    // Sort products
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "name":
@@ -154,7 +94,18 @@ export function ShopSection() {
           </p>
         </div>
 
-        {/* Filters */}
+        {loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">Loading products...</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="text-center py-12">
+            <p className="text-red-500 text-lg">{error}</p>
+          </div>
+        )}
+
         <div className="mb-8 space-y-4 lg:space-y-0 lg:flex lg:items-center lg:space-x-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -193,14 +144,15 @@ export function ShopSection() {
           </Select>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {!loading && !error && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
 
-        {filteredProducts.length === 0 && (
+        {!loading && !error && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
             <Button

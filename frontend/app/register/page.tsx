@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, ArrowLeft, User, Mail, Lock } from "lucide-react"
 import { useAuthStore } from "@/lib/store"
+import { AuthApi } from "@/lib/api"
 import { toast } from "sonner"
 
 export default function RegisterPage() {
@@ -46,24 +47,14 @@ export default function RegisterPage() {
         return
       }
 
-      // Mock registration - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock user data
-      const mockUser = {
-        id: "1",
-        name: formData.name,
-        email: formData.email,
-        role: "CUSTOMER" as const,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      login(mockUser)
+      await AuthApi.register(formData.name, formData.email, formData.password)
+      const result = await AuthApi.login(formData.email, formData.password)
+      login(result.user, result.token)
       toast.success("Account created successfully!")
       router.push("/")
     } catch (error) {
-      toast.error("Registration failed. Please try again.")
+      const message = error instanceof Error ? error.message : "Registration failed. Please try again."
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }

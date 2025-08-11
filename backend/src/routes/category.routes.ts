@@ -4,15 +4,15 @@ import { isAdmin, verifyToken } from "../middleware/auth.middleware.js";
 
 
 
-const router: Router = Router();
+const categoryRouter: Router = Router();
 
 // Public
-router.get("/", getCategories);
-router.get("/:id", getCategoryById);
+categoryRouter.get("/", getCategories);
+categoryRouter.get("/:id", getCategoryById);
 
 // Admin only
-router.post("/", verifyToken, isAdmin, createCategory);
-router.put("/:id", verifyToken, isAdmin, updateCategory);
-router.delete("/:id", verifyToken, isAdmin, deleteCategory);
+categoryRouter.post("/", verifyToken, isAdmin, createCategory);
+categoryRouter.put("/:id", verifyToken, isAdmin, updateCategory);
+categoryRouter.delete("/:id", verifyToken, isAdmin, deleteCategory);
 
-export default router;
+export default categoryRouter;
