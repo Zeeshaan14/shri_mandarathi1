@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, User } from "lucide-react"
+import { Menu, User, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CartSidebar } from "./shop/cart-sidebar"
@@ -51,6 +51,14 @@ export function Header() {
           {isAuthenticated ? (
             <div className="flex items-center space-x-2">
               <span className="text-sm">Hello, {user?.name}</span>
+              {user?.role === "ADMIN" && (
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/admin">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Admin
+                  </Link>
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={logout}>
                 Logout
               </Button>
@@ -93,6 +101,14 @@ export function Header() {
                   {isAuthenticated ? (
                     <div className="space-y-2">
                       <p className="text-sm text-gray-600">Hello, {user?.name}</p>
+                      {user?.role === "ADMIN" && (
+                        <Button asChild variant="outline" size="sm" className="w-full bg-transparent">
+                          <Link href="/admin">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Admin Panel
+                          </Link>
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={logout} className="w-full bg-transparent">
                         Logout
                       </Button>

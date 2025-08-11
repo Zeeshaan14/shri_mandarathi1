@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Shri Mandarathi Products - Premium Oil & Flour Mill",
   description:
     "Pure, natural oil products crafted with traditional methods. Tejaswi Deepam Oil and Pure Coconut Oil from Karnataka.",
-    generator: 'v0.dev',
+  generator: "v0.dev",
   icons: {
     icon: "/sm-logo.jpeg", // Logo in public folder
   },
@@ -27,7 +27,14 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <ClientCartHydrator />
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              marginTop: "60px",
+            },
+          }}
+        />
       </body>
     </html>
   )

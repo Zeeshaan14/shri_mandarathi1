@@ -75,5 +75,3 @@ export const OrdersApi = {
     token?: string,
   ) => apiFetch("/api/orders", { method: "POST", body: payload, token }),
 }
-
-
