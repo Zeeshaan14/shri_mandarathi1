@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { OrdersApi } from "@/lib/api"
+import { useAuthStore } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -64,101 +66,30 @@ export function OrdersManagement() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false)
 
-  // Mock data - replace with real API calls
   useEffect(() => {
-    const mockOrders: Order[] = [
-      {
-        id: "order-1",
-        userId: "user-1",
-        user: {
-          name: "John Doe",
-          email: "john@example.com",
-          phone: "+91 9876543210",
-        },
-        status: "PENDING",
-        total: 850,
-        createdAt: "2024-01-15T10:30:00Z",
-        items: [
-          {
-            id: "item-1",
-            quantity: 2,
-            price: 425,
-            variant: {
-              size: "500ml",
-              product: {
-                name: "Sri Mandarathi Pure Coconut Oil",
-                imageUrl: "/product-bottle-1.jpeg",
-              },
-            },
-          },
-        ],
-        shippingFullName: "John Doe",
-        shippingPhone: "+91 9876543210",
-        shippingLine1: "123 Main Street",
-        shippingLine2: "Apartment 4B",
-        shippingCity: "Udupi",
-        shippingState: "Karnataka",
-        shippingPostalCode: "576101",
-        shippingCountry: "India",
-      },
-      {
-        id: "order-2",
-        userId: "user-2",
-        user: {
-          name: "Jane Smith",
-          email: "jane@example.com",
-          phone: "+91 9876543211",
-        },
-        status: "SHIPPED",
-        total: 1200,
-        createdAt: "2024-01-14T15:45:00Z",
-        items: [
-          {
-            id: "item-2",
-            quantity: 1,
-            price: 600,
-            variant: {
-              size: "1L",
-              product: {
-                name: "Sri Mandarathi Pure Coconut Oil",
-                imageUrl: "/product-bottle-1.jpeg",
-              },
-            },
-          },
-          {
-            id: "item-3",
-            quantity: 3,
-            price: 200,
-            variant: {
-              size: "250ml",
-              product: {
-                name: "Tejaswi Deepam Oil",
-                imageUrl: "/tej.png",
-              },
-            },
-          },
-        ],
-        shippingFullName: "Jane Smith",
-        shippingPhone: "+91 9876543211",
-        shippingLine1: "456 Oak Avenue",
-        shippingCity: "Mangalore",
-        shippingState: "Karnataka",
-        shippingPostalCode: "575001",
-        shippingCountry: "India",
-      },
-    ]
-
-    setOrders(mockOrders)
-    setLoading(false)
-  }, [])
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const token = useAuthStore.getState().token;
+        const orders = await OrdersApi.list(token || undefined);
+        setOrders(orders);
+      } catch (error) {
+        toast.error("Failed to fetch orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     try {
-      // API call to update order status
-      setOrders(orders.map((order) => (order.id === orderId ? { ...order, status: newStatus as any } : order)))
-      toast.success(`Order status updated to ${newStatus}`)
-    } catch (error) {
-      toast.error("Failed to update order status")
+      const token = useAuthStore.getState().token;
+      await OrdersApi.updateStatus(orderId, newStatus, token || undefined);
+      setOrders(orders => orders.map(order => order.id === orderId ? { ...order, status: newStatus as any } : order));
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch (error: any) {
+      toast.error("Failed to update order status");
     }
   }
 
@@ -329,15 +260,27 @@ export function OrdersManagement() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{order.user.name}</p>
-                        <p className="text-sm text-gray-500">{order.user.email}</p>
+                        {order.user ? (
+                          <>
+                            <p className="font-medium">{order.user.name}</p>
+                            <p className="text-sm text-gray-500">{order.user.email}</p>
+                          </>
+                        ) : (
+                          <span className="text-red-500 text-xs">No user info</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         {order.items.slice(0, 2).map((item, index) => (
                           <div key={index} className="text-sm">
-                            {item.quantity}x {item.variant.product.name} ({item.variant.size})
+                            {item.variant.product ? (
+                              <>
+                                {item.quantity}x {item.variant.product.name} ({item.variant.size})
+                              </>
+                            ) : (
+                              <span className="text-red-500 text-xs">No product info</span>
+                            )}
                           </div>
                         ))}
                         {order.items.length > 2 && (
@@ -412,13 +355,19 @@ export function OrdersManagement() {
                                   <CardContent>
                                     <div className="grid grid-cols-2 gap-4">
                                       <div>
-                                        <p className="font-medium">{selectedOrder.user.name}</p>
-                                        <p className="text-sm text-gray-600">{selectedOrder.user.email}</p>
+                                        {selectedOrder.user ? (
+                                          <>
+                                            <p className="font-medium">{selectedOrder.user.name}</p>
+                                            <p className="text-sm text-gray-600">{selectedOrder.user.email}</p>
+                                          </>
+                                        ) : (
+                                          <span className="text-red-500 text-xs">No user info</span>
+                                        )}
                                       </div>
                                       <div>
                                         <div className="flex items-center space-x-2">
                                           <Phone className="h-4 w-4 text-gray-400" />
-                                          <span className="text-sm">{selectedOrder.user.phone || "N/A"}</span>
+                                          <span className="text-sm">{selectedOrder.user?.phone || "N/A"}</span>
                                         </div>
                                       </div>
                                     </div>

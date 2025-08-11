@@ -42,26 +42,27 @@ export function CategoriesManagement() {
 
   const handleAddCategory = async () => {
     try {
-      // API call to add category
+      await ProductsApi.addCategory(categoryForm.name)
       toast.success("Category added successfully!")
       setIsAddDialogOpen(false)
       resetForm()
       loadCategories()
-    } catch (error) {
-      toast.error("Failed to add category")
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to add category")
     }
   }
 
   const handleEditCategory = async () => {
+    if (!editingCategory) return
     try {
-      // API call to update category
+      await ProductsApi.updateCategory(editingCategory.id, categoryForm.name)
       toast.success("Category updated successfully!")
       setIsEditDialogOpen(false)
       setEditingCategory(null)
       resetForm()
       loadCategories()
-    } catch (error) {
-      toast.error("Failed to update category")
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update category")
     }
   }
 
@@ -70,11 +71,11 @@ export function CategoriesManagement() {
       return
 
     try {
-      // API call to delete category
+      await ProductsApi.deleteCategory(categoryId)
       toast.success("Category deleted successfully!")
       loadCategories()
-    } catch (error) {
-      toast.error("Failed to delete category")
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete category")
     }
   }
 

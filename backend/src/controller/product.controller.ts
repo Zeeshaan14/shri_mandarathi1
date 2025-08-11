@@ -6,6 +6,21 @@ export const createProduct = async (req: Request, res: Response) => {
   try {
     const { name, description, categoryId, imageUrl, variations } = req.body;
 
+    // 1. Check for duplicate SKUs in the request
+    const skus = (variations || []).map((v: any) => v.sku).filter((sku: any) => sku);
+    const uniqueSkus = new Set(skus);
+    if (skus.length !== uniqueSkus.size) {
+      return res.status(400).json({ message: "Duplicate SKUs found in variations. Each SKU must be unique." });
+    }
+
+    // 2. Check for existing SKUs in the database
+    if (skus.length > 0) {
+      const existing = await prisma1.productVariant.findMany({ where: { sku: { in: skus } }, select: { sku: true } });
+      if (existing.length > 0) {
+        return res.status(400).json({ message: `The following SKUs already exist: ${existing.map(e => e.sku).join(", ")}` });
+      }
+    }
+
     const category = await prisma1.category.findUnique({ where: { id: categoryId } });
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
@@ -23,9 +38,9 @@ export const createProduct = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(product);
-  } catch (err) {
+  } catch (err: any) {
     console.error("[CREATE_PRODUCT_ERROR]", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err?.message || "Server error", error: err });
   }
 };
 
@@ -59,11 +74,73 @@ export const getProductById = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { name, description, categoryId, imageUrl, variations } = req.body;
-
     const { id } = req.params;
     if (!id) {
       return res.status(400).json({ message: "Product ID is required" });
     }
+
+    // Fetch all existing variants for this product
+    const existingVariants = await prisma1.productVariant.findMany({ where: { productId: id as string } });
+    const existingVariantIds = existingVariants.map(v => v.id);
+
+    // Find which variants are referenced in OrderItem
+    const referencedVariants = await prisma1.orderItem.findMany({
+      where: { variantId: { in: existingVariantIds } },
+      select: { variantId: true },
+    });
+    const referencedVariantIds = new Set(referencedVariants.map(v => v.variantId));
+
+    // Variants to keep (referenced), to update, to delete, to create
+    type Variant = {
+      size: string;
+      price: number;
+      stock: number;
+      sku?: string | null;
+      imageUrl?: string | null;
+    };
+    const incomingBySku: Record<string, Variant> = Object.fromEntries(
+      ((variations || []) as Variant[]).filter((v) => v.sku).map((v) => [v.sku as string, v])
+    );
+    const toDelete = existingVariants.filter((v) => !referencedVariantIds.has(v.id) && (!v.sku || !incomingBySku[v.sku]));
+    const toUpdate = existingVariants.filter((v) => referencedVariantIds.has(v.id) && v.sku && incomingBySku[v.sku]);
+    const toCreate = (variations || []).filter((v: Variant) => !v.sku || !existingVariants.some((ev) => ev.sku === v.sku));
+
+    // 1. Delete variants not referenced in OrderItem and not present in new list
+    for (const v of toDelete) {
+      await prisma1.productVariant.delete({ where: { id: v.id } });
+    }
+
+    // 2. Update referenced variants (only allowed fields)
+    for (const v of toUpdate) {
+      if (!v.sku) continue;
+      const newData = incomingBySku[v.sku];
+      if (!newData) continue;
+      await prisma1.productVariant.update({
+        where: { id: v.id },
+        data: {
+          size: newData.size,
+          price: newData.price,
+          stock: newData.stock,
+          imageUrl: typeof newData.imageUrl === "undefined" ? null : newData.imageUrl,
+        },
+      });
+    }
+
+    // 3. Create new variants
+    for (const v of toCreate) {
+      await prisma1.productVariant.create({
+        data: {
+          productId: id as string,
+          size: v.size,
+          price: v.price,
+          stock: v.stock,
+          sku: v.sku,
+          imageUrl: v.imageUrl,
+        },
+      });
+    }
+
+    // 4. Update product fields
     const product = await prisma1.product.update({
       where: { id: id as string },
       data: {
@@ -71,18 +148,14 @@ export const updateProduct = async (req: Request, res: Response) => {
         description,
         categoryId,
         imageUrl,
-        variations: {
-          deleteMany: {}, // remove old
-          create: variations, // add new
-        },
       },
       include: { variations: true },
     });
 
     res.json(product);
-  } catch (err) {
+  } catch (err: any) {
     console.error("[UPDATE_PRODUCT_ERROR]", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err?.message || "Server error", error: err });
   }
 };
 
@@ -93,9 +166,15 @@ export const deleteProduct = async (req: Request, res: Response) => {
     if (!id) {
       return res.status(400).json({ message: "Product ID is required" });
     }
+
+    // First, delete all ProductVariant records for this product
+    await prisma1.productVariant.deleteMany({ where: { productId: id as string } });
+
+    // Then, delete the product itself
     await prisma1.product.delete({ where: { id: id as string } });
     res.json({ message: "Product deleted" });
-  } catch {
+  } catch (err) {
+    console.error("[DELETE_PRODUCT_ERROR]", err);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -27,6 +27,7 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
   }
 
   return response.json();
+// ...existing code...
 }
 
 export const AuthApi = {
@@ -45,6 +46,19 @@ export const AuthApi = {
 export const ProductsApi = {
   list: () => apiFetch("/api/products"),
   categories: () => apiFetch("/api/categories"),
+  addCategory: (name: string, token?: string) =>
+    apiFetch("/api/categories", { method: "POST", body: { name }, token }),
+  updateCategory: (id: string, name: string, token?: string) =>
+    apiFetch(`/api/categories/${id}`, { method: "PATCH", body: { name }, token }),
+  deleteCategory: (id: string, token?: string) =>
+    apiFetch(`/api/categories/${id}`, { method: "DELETE", token }),
+
+  addProduct: (product: any, token?: string) =>
+    apiFetch("/api/products", { method: "POST", body: product, token }),
+  updateProduct: (id: string, product: any, token?: string) =>
+    apiFetch(`/api/products/${id}`, { method: "PUT", body: product, token }),
+  deleteProduct: (id: string, token?: string) =>
+    apiFetch(`/api/products/${id}`, { method: "DELETE", token }),
 };
 
 export const CartApi = {
@@ -58,6 +72,7 @@ export const CartApi = {
 }
 
 export const OrdersApi = {
+  list: (token?: string) => apiFetch("/api/orders", { token }),
   create: (
     payload: {
       items: Array<{ variantId: string; quantity: number }>
@@ -74,4 +89,6 @@ export const OrdersApi = {
     },
     token?: string,
   ) => apiFetch("/api/orders", { method: "POST", body: payload, token }),
+  updateStatus: (id: string, status: string, token?: string) =>
+    apiFetch(`/api/orders/${id}`, { method: "PATCH", body: { status }, token }),
 }
