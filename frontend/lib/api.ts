@@ -53,8 +53,21 @@ export const ProductsApi = {
   deleteCategory: (id: string, token?: string) =>
     apiFetch(`/api/categories/${id}`, { method: "DELETE", token }),
 
-  addProduct: (product: any, token?: string) =>
-    apiFetch("/api/products", { method: "POST", body: product, token }),
+  // Multipart create using FormData (supports image upload)
+  createMultipart: async (formData: FormData, token?: string) => {
+    const res = await fetch(`${API_URL}/api/products`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      } as any,
+      body: formData,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => "")
+      throw new Error(text || `Request failed with status ${res.status}`)
+    }
+    return res.json()
+  },
   updateProduct: (id: string, product: any, token?: string) =>
     apiFetch(`/api/products/${id}`, { method: "PUT", body: product, token }),
   deleteProduct: (id: string, token?: string) =>

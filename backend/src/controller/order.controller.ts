@@ -10,6 +10,16 @@ export const createOrder = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "User not authenticated" });
   }
 
+  // Ensure the user exists to avoid FK violations and provide a clearer error
+  try {
+    const existingUser = await prisma1.user.findUnique({ where: { id: userId } });
+    if (!existingUser) {
+      return res.status(400).json({ message: "User not found. Please login again." });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || "Server error" });
+  }
+
   if (!items || items.length === 0) {
     return res.status(400).json({ message: "No items in order" });
   }
@@ -101,7 +111,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
       if (!order) throw new Error("Order not found");
       if (order.status === "CANCELLED") throw new Error("Order already cancelled");
 
-      if (user.role !== "ADMIN" && order.userId !== user.id) {
+      if (user.role !== "ADMIN" && order.userId !== user.userId) {
         throw new Error("Not authorized to cancel this order");
       }
 
@@ -132,7 +142,7 @@ export const getOrders = async (req: Request, res: Response) => {
 
   try {
     const orders = await prisma1.order.findMany({
-      where: user.role === "ADMIN" ? {} : { userId: user.id },
+      where: user.role === "ADMIN" ? {} : { userId: user.userId },
       include: {
         user: true,
         items: { include: { variant: true } },
@@ -160,7 +170,7 @@ export const getOrderById = async (req: Request, res: Response) => {
     });
 
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (user.role !== "ADMIN" && order.userId !== user.id) {
+    if (user.role !== "ADMIN" && order.userId !== user.userId) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
