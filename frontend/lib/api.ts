@@ -1,3 +1,8 @@
+export const UsersApi = {
+  list: (token?: string) => apiFetch("/api/users", { token }),
+  updateRole: (id: string, role: "ADMIN" | "CUSTOMER", token?: string) =>
+    apiFetch(`/api/users/${id}/role`, { method: "PATCH", body: { role }, token }),
+};
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 type ApiOptions = {

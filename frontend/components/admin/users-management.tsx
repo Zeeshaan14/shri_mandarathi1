@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Users, Eye, Shield, ShoppingBag, Calendar, Mail } from "lucide-react"
 import { toast } from "sonner"
+import { UsersApi } from "@/lib/api"
+import { useAuthStore } from "@/lib/store"
 
 interface User {
   id: string
@@ -37,67 +39,26 @@ export function UsersManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false)
 
-  // Mock data - replace with real API calls
   useEffect(() => {
-    const mockUsers: User[] = [
-      {
-        id: "user-1",
-        name: "John Doe",
-        email: "john@example.com",
-        role: "CUSTOMER",
-        createdAt: "2024-01-10T10:30:00Z",
-        updatedAt: "2024-01-15T14:20:00Z",
-        _count: { orders: 3 },
-        orders: [
-          {
-            id: "order-1",
-            total: 850,
-            status: "DELIVERED",
-            createdAt: "2024-01-15T10:30:00Z",
-          },
-          {
-            id: "order-2",
-            total: 1200,
-            status: "SHIPPED",
-            createdAt: "2024-01-12T15:45:00Z",
-          },
-        ],
-      },
-      {
-        id: "user-2",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        role: "CUSTOMER",
-        createdAt: "2024-01-08T09:15:00Z",
-        updatedAt: "2024-01-14T16:30:00Z",
-        _count: { orders: 5 },
-        orders: [
-          {
-            id: "order-3",
-            total: 650,
-            status: "PENDING",
-            createdAt: "2024-01-14T11:20:00Z",
-          },
-        ],
-      },
-      {
-        id: "user-3",
-        name: "Admin User",
-        email: "admin@shrimandarathi.com",
-        role: "ADMIN",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-15T18:00:00Z",
-        _count: { orders: 0 },
-      },
-    ]
-
-    setUsers(mockUsers)
-    setLoading(false)
+    const fetchUsers = async () => {
+      setLoading(true)
+      try {
+        const token = useAuthStore.getState().token
+        const users = await UsersApi.list(token)
+        setUsers(users)
+      } catch (error: any) {
+        toast.error("Failed to fetch users")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUsers()
   }, [])
 
   const handleRoleUpdate = async (userId: string, newRole: "ADMIN" | "CUSTOMER") => {
     try {
-      // API call to update user role
+      const token = useAuthStore.getState().token
+      await UsersApi.updateRole(userId, newRole, token)
       setUsers(users.map((user) => (user.id === userId ? { ...user, role: newRole } : user)))
       toast.success(`User role updated to ${newRole}`)
     } catch (error) {

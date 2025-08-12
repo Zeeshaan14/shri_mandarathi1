@@ -8,6 +8,7 @@ import categoryRouter from "./routes/category.routes.js";
 import productRouter from "./routes/product.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import addressRoutes from "./routes/address.routes.js";
+import userRouter from "./routes/user.routes.js";
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -28,6 +29,7 @@ app.use("/api/products", productRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/cart", cartRoutes);
 app.use("/api/addresses", addressRoutes);
+app.use("/api/users", userRouter);
 app.get("/", (req, res) => {
     res.send("API is running...");
 });

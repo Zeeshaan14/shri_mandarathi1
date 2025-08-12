@@ -251,11 +251,36 @@ export const deleteProduct = async (req, res) => {
         if (variantIds.length > 0) {
             await prisma1.cartItem.deleteMany({ where: { variantId: { in: variantIds } } });
         }
-        // Block delete if variants referenced by orders (preserve order history)
-        const orderRefs = await prisma1.orderItem.count({ where: { variantId: { in: variantIds } } });
-        if (orderRefs > 0) {
-            return res.status(409).json({
-                message: "Cannot delete product: It has order history. Consider disabling/hiding it instead.",
+        // Block delete if any referencing order is not DELIVERED or CANCELLED
+        if (variantIds.length > 0) {
+            const activeOrderRefs = await prisma1.orderItem.findMany({
+                where: {
+                    variantId: { in: variantIds },
+                    order: {
+                        NOT: {
+                            status: { in: ["DELIVERED", "CANCELLED"] }
+                        }
+                    }
+                },
+                select: { id: true, orderId: true, order: { select: { status: true } } },
+            });
+            if (activeOrderRefs.length > 0) {
+                const blockingOrders = activeOrderRefs.map(ref => ({ orderId: ref.orderId, status: ref.order?.status })).filter(Boolean);
+                return res.status(409).json({
+                    message: "Cannot delete product: It has active order history. Consider disabling/hiding it instead.",
+                    blockingOrders,
+                });
+            }
+        }
+        // Delete OrderItems for delivered/cancelled orders referencing these variants
+        if (variantIds.length > 0) {
+            await prisma1.orderItem.deleteMany({
+                where: {
+                    variantId: { in: variantIds },
+                    order: {
+                        status: { in: ["DELIVERED", "CANCELLED"] }
+                    }
+                }
             });
         }
         // Safe to delete variants and product

@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, Search, Tag, Package } from "lucide-react"
 import { toast } from "sonner"
 import type { Category } from "@/lib/types"
 import { ProductsApi } from "@/lib/api"
+import { useAuthStore } from "@/lib/store"
 
 export function CategoriesManagement() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -42,7 +43,8 @@ export function CategoriesManagement() {
 
   const handleAddCategory = async () => {
     try {
-      await ProductsApi.addCategory(categoryForm.name)
+      const token = useAuthStore.getState().token
+      await ProductsApi.addCategory(categoryForm.name, token)
       toast.success("Category added successfully!")
       setIsAddDialogOpen(false)
       resetForm()
@@ -55,7 +57,8 @@ export function CategoriesManagement() {
   const handleEditCategory = async () => {
     if (!editingCategory) return
     try {
-      await ProductsApi.updateCategory(editingCategory.id, categoryForm.name)
+      const token = useAuthStore.getState().token
+      await ProductsApi.updateCategory(editingCategory.id, categoryForm.name, token)
       toast.success("Category updated successfully!")
       setIsEditDialogOpen(false)
       setEditingCategory(null)
@@ -71,7 +74,8 @@ export function CategoriesManagement() {
       return
 
     try {
-      await ProductsApi.deleteCategory(categoryId)
+      const token = useAuthStore.getState().token
+      await ProductsApi.deleteCategory(categoryId, token)
       toast.success("Category deleted successfully!")
       loadCategories()
     } catch (error: any) {
