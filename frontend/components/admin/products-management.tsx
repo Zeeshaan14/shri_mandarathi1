@@ -27,6 +27,7 @@ export function ProductsManagement() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [addImageFile, setAddImageFile] = useState<File | null>(null)
 
   const [productForm, setProductForm] = useState({
     name: "",
@@ -70,16 +71,20 @@ export function ProductsManagement() {
         price: parseFloat(v.price),
         stock: parseInt(v.stock, 10),
       }))
-      await ProductsApi.addProduct({
-        name: productForm.name,
-        description: productForm.description,
-        categoryId: productForm.categoryId,
-        imageUrl: productForm.imageUrl,
-        variations,
-      }, token || undefined)
+      // Build multipart form; backend expects field name "image" for the file
+      const form = new FormData()
+      form.append("name", productForm.name)
+      form.append("description", productForm.description)
+      form.append("categoryId", productForm.categoryId)
+      form.append("variations", JSON.stringify(variations))
+      if (addImageFile) {
+        form.append("image", addImageFile)
+      }
+      await ProductsApi.createMultipart(form, token || undefined)
       toast.success("Product added successfully!")
       setIsAddDialogOpen(false)
       resetForm()
+      setAddImageFile(null)
       loadData()
     } catch (error: any) {
       toast.error(error?.message || "Failed to add product")
@@ -284,13 +289,8 @@ export function ProductsManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Product Image URL</Label>
-                <Input
-                  id="imageUrl"
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  placeholder="Enter image URL"
-                />
+                <Label>Product Image</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setAddImageFile(e.target.files?.[0] || null)} />
               </div>
 
               {/* Variations */}
