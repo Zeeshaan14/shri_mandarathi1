@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, ShoppingCart, Truck, CreditCard, Phone, MapPin, User, Loader2 } from "lucide-react"
 import { useCartStore, useAuthStore } from "@/lib/store"
-import { OrdersApi } from "@/lib/api"
+import { AddressesApi, OrdersApi } from "@/lib/api"
 import { toast } from "sonner"
 
 export default function CheckoutPage() {
@@ -25,6 +25,8 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("cod")
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [hasAddress, setHasAddress] = useState(false)
+  const prefilledOnceRef = useRef(false)
 
   const [formData, setFormData] = useState({
     // Customer Info
@@ -48,6 +50,38 @@ export default function CheckoutPage() {
       router.push("/")
     }
   }, [items, router])
+
+  // Prefill from saved default address if available
+  useEffect(() => {
+    const prefill = async () => {
+      try {
+        if (!isAuthenticated || !token) return
+        const addresses: any[] = await AddressesApi.list(token)
+        setHasAddress((addresses?.length || 0) > 0)
+        if (prefilledOnceRef.current) return
+        if (addresses && addresses.length > 0) {
+          const def = addresses.find((a: any) => a.isDefault) || addresses[0]
+          if (def) {
+            setFormData((prev) => ({
+              ...prev,
+              name: def.fullName || user?.name || prev.name,
+              email: user?.email || prev.email,
+              phone: def.phone || prev.phone,
+              address: def.line1 || prev.address,
+              landmark: def.line2 || prev.landmark,
+              city: def.city || prev.city,
+              state: def.state || prev.state,
+              pincode: def.postalCode || prev.pincode,
+            }))
+            prefilledOnceRef.current = true
+          }
+        }
+      } catch {
+        // ignore silently
+      }
+    }
+    prefill()
+  }, [isAuthenticated, token, user])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -80,6 +114,29 @@ export default function CheckoutPage() {
       if (!isAuthenticated || !user?.id || !token) {
         toast.error("Please login to place order")
         return
+      }
+
+      // If this is the first time, save the entered address as default
+      if (!hasAddress) {
+        try {
+          await AddressesApi.create(
+            {
+              fullName: formData.name,
+              phone: formData.phone,
+              line1: formData.address,
+              line2: formData.landmark || "",
+              city: formData.city,
+              state: formData.state,
+              postalCode: formData.pincode,
+              country: "India",
+              isDefault: true,
+            },
+            token,
+          )
+          setHasAddress(true)
+        } catch {
+          // do not block order on address save failure
+        }
       }
 
       const payload = {

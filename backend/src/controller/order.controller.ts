@@ -78,7 +78,7 @@ export const createOrder = async (req: Request, res: Response) => {
           },
         },
         include: {
-          items: { include: { variant: true } },
+          items: { include: { variant: { include: { product: true } } } },
         },
       });
 
@@ -145,8 +145,9 @@ export const getOrders = async (req: Request, res: Response) => {
       where: user.role === "ADMIN" ? {} : { userId: user.userId },
       include: {
         user: true,
-        items: { include: { variant: true } },
+        items: { include: { variant: { include: { product: true } } } },
       },
+      orderBy: { createdAt: "desc" },
     });
     res.json(orders);
   } catch (error: any) {
@@ -166,7 +167,7 @@ export const getOrderById = async (req: Request, res: Response) => {
   try {
     const order = await prisma1.order.findUnique({
       where: { id },
-      include: { items: { include: { variant: true } } },
+      include: { items: { include: { variant: { include: { product: true } } } } },
     });
 
     if (!order) return res.status(404).json({ message: "Order not found" });

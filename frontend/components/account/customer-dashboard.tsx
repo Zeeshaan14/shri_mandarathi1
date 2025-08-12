@@ -6,7 +6,8 @@ import { OrderHistory } from "./order-history"
 import { ProfileSettings } from "./profile-settings"
 import { AddressBook } from "./address-book"
 import { AccountOverview } from "./account-overview"
-import { User, Package, MapPin, Settings } from "lucide-react"
+import { User, Package, MapPin, Settings, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -15,6 +16,10 @@ export function CustomerDashboard() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         <div className="mb-8">
+          <Link href="/" className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 mb-4">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Shop</span>
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
           <p className="text-muted-foreground mt-2">Manage your account settings and view your order history</p>
         </div>
