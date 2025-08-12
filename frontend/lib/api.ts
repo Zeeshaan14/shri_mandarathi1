@@ -105,3 +105,39 @@ export const OrdersApi = {
   updateStatus: (id: string, status: string, token?: string) =>
     apiFetch(`/api/orders/${id}`, { method: "PATCH", body: { status }, token }),
 }
+
+export const AddressesApi = {
+  list: (token?: string) => apiFetch("/api/addresses", { token }),
+  create: (
+    payload: {
+      label?: string
+      fullName: string
+      phone: string
+      line1: string
+      line2?: string
+      city: string
+      state: string
+      postalCode: string
+      country: string
+      isDefault?: boolean
+    },
+    token?: string,
+  ) => apiFetch("/api/addresses", { method: "POST", body: payload, token }),
+  update: (
+    id: string,
+    payload: {
+      label?: string
+      fullName?: string
+      phone?: string
+      line1?: string
+      line2?: string
+      city?: string
+      state?: string
+      postalCode?: string
+      country?: string
+      isDefault?: boolean
+    },
+    token?: string,
+  ) => apiFetch(`/api/addresses/${id}`, { method: "PATCH", body: payload, token }),
+  delete: (id: string, token?: string) => apiFetch(`/api/addresses/${id}`, { method: "DELETE", token }),
+}

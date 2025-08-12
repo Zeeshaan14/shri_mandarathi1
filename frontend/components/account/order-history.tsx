@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Search, Package, Calendar, MapPin, Phone, User } from "lucide-react"
+import { OrdersApi } from "@/lib/api"
+import { useAuthStore } from "@/lib/store"
 
 interface Order {
   id: string
@@ -53,114 +55,48 @@ export function OrderHistory() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
+  const token = useAuthStore((s) => s.token)
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockOrders: Order[] = [
-      {
-        id: "ORD-001",
-        status: "DELIVERED",
-        total: 450.0,
-        createdAt: "2024-01-15T10:30:00Z",
-        updatedAt: "2024-01-18T14:20:00Z",
-        items: [
-          {
-            id: "1",
-            quantity: 2,
-            price: 225.0,
+    const fetchOrders = async () => {
+      try {
+        const apiOrders: any[] = await OrdersApi.list(token || undefined)
+        const normalized: Order[] = (apiOrders || []).map((o) => ({
+          id: o.id,
+          status: o.status,
+          total: typeof o.total === "string" ? Number(o.total) : o.total,
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt,
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            quantity: it.quantity,
+            price: typeof it.price === "string" ? Number(it.price) : it.price,
             variant: {
-              id: "v1",
-              size: "500ml",
+              id: it.variant.id,
+              size: it.variant.size,
               product: {
-                name: "Premium Coconut Oil",
-                imageUrl: "/coconut-oil.png",
+                name: it.variant.product?.name || "",
+                imageUrl: it.variant.product?.imageUrl,
               },
             },
-          },
-        ],
-        shippingFullName: "John Doe",
-        shippingPhone: "+91 9876543210",
-        shippingLine1: "123 Main Street",
-        shippingLine2: "Apartment 4B",
-        shippingCity: "Mumbai",
-        shippingState: "Maharashtra",
-        shippingPostalCode: "400001",
-        shippingCountry: "India",
-      },
-      {
-        id: "ORD-002",
-        status: "SHIPPED",
-        total: 320.0,
-        createdAt: "2024-01-10T14:20:00Z",
-        updatedAt: "2024-01-12T09:15:00Z",
-        items: [
-          {
-            id: "2",
-            quantity: 1,
-            price: 180.0,
-            variant: {
-              id: "v2",
-              size: "1kg",
-              product: {
-                name: "Organic Wheat Flour",
-                imageUrl: "/wheat-flour.png",
-              },
-            },
-          },
-          {
-            id: "3",
-            quantity: 2,
-            price: 70.0,
-            variant: {
-              id: "v3",
-              size: "250ml",
-              product: {
-                name: "Sesame Oil",
-                imageUrl: "/sesame-oil.png",
-              },
-            },
-          },
-        ],
-        shippingFullName: "John Doe",
-        shippingPhone: "+91 9876543210",
-        shippingLine1: "123 Main Street",
-        shippingCity: "Mumbai",
-        shippingState: "Maharashtra",
-        shippingPostalCode: "400001",
-        shippingCountry: "India",
-      },
-      {
-        id: "ORD-003",
-        status: "PENDING",
-        total: 280.0,
-        createdAt: "2024-01-08T16:45:00Z",
-        updatedAt: "2024-01-08T16:45:00Z",
-        items: [
-          {
-            id: "4",
-            quantity: 1,
-            price: 280.0,
-            variant: {
-              id: "v4",
-              size: "1L",
-              product: {
-                name: "Cold Pressed Groundnut Oil",
-                imageUrl: "/groundnut-oil.png",
-              },
-            },
-          },
-        ],
-        shippingFullName: "John Doe",
-        shippingPhone: "+91 9876543210",
-        shippingLine1: "123 Main Street",
-        shippingCity: "Mumbai",
-        shippingState: "Maharashtra",
-        shippingPostalCode: "400001",
-        shippingCountry: "India",
-      },
-    ]
-    setOrders(mockOrders)
-    setFilteredOrders(mockOrders)
-  }, [])
+          })),
+          shippingFullName: o.shippingFullName,
+          shippingPhone: o.shippingPhone,
+          shippingLine1: o.shippingLine1,
+          shippingLine2: o.shippingLine2,
+          shippingCity: o.shippingCity,
+          shippingState: o.shippingState,
+          shippingPostalCode: o.shippingPostalCode,
+          shippingCountry: o.shippingCountry,
+        }))
+        setOrders(normalized)
+        setFilteredOrders(normalized)
+      } catch (e) {
+        setOrders([])
+        setFilteredOrders([])
+      }
+    }
+    fetchOrders()
+  }, [token])
 
   useEffect(() => {
     let filtered = orders

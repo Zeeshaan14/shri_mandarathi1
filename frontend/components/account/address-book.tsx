@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
+import { AddressesApi } from "@/lib/api"
+import { useAuthStore } from "@/lib/store"
 import { MapPin, Plus, Edit, Trash2, Phone, User } from "lucide-react"
 
 interface Address {
@@ -52,78 +54,38 @@ export function AddressBook() {
   })
   const { toast } = useToast()
 
+  const token = useAuthStore((s) => s.token)
   useEffect(() => {
-    // Mock data - replace with actual API call
-    setAddresses([
-      {
-        id: "1",
-        label: "Home",
-        fullName: "John Doe",
-        phone: "+91 9876543210",
-        line1: "123 Main Street",
-        line2: "Apartment 4B",
-        city: "Mumbai",
-        state: "Maharashtra",
-        postalCode: "400001",
-        country: "India",
-        isDefault: true,
-      },
-      {
-        id: "2",
-        label: "Office",
-        fullName: "John Doe",
-        phone: "+91 9876543210",
-        line1: "456 Business Park",
-        city: "Mumbai",
-        state: "Maharashtra",
-        postalCode: "400002",
-        country: "India",
-        isDefault: false,
-      },
-    ])
-  }, [])
+    const fetchAddresses = async () => {
+      try {
+        const res = await AddressesApi.list(token || undefined)
+        setAddresses(res || [])
+      } catch (e) {
+        // ignore silently or show message
+      }
+    }
+    fetchAddresses()
+  }, [token])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingAddress) {
-      // Update existing address
-      setAddresses((prev) =>
-        prev.map((addr) =>
-          addr.id === editingAddress.id
-            ? { ...formData, id: editingAddress.id }
-            : formData.isDefault
-              ? { ...addr, isDefault: false }
-              : addr,
-        ),
-      )
-      toast({
-        title: "Address updated",
-        description: "Your address has been updated successfully.",
-      })
-      setEditingAddress(null)
-    } else {
-      // Add new address
-      const newAddress: Address = {
-        ...formData,
-        id: Date.now().toString(),
+    try {
+      if (editingAddress) {
+        await AddressesApi.update(editingAddress.id, formData, token || undefined)
+        toast({ title: "Address updated", description: "Your address has been updated successfully." })
+        setEditingAddress(null)
+      } else {
+        await AddressesApi.create(formData, token || undefined)
+        toast({ title: "Address added", description: "Your new address has been saved successfully." })
       }
-
-      setAddresses((prev) => {
-        if (formData.isDefault) {
-          return [...prev.map((addr) => ({ ...addr, isDefault: false })), newAddress]
-        }
-        return [...prev, newAddress]
-      })
-
-      toast({
-        title: "Address added",
-        description: "Your new address has been saved successfully.",
-      })
+      const res = await AddressesApi.list(token || undefined)
+      setAddresses(res || [])
+      setIsAddDialogOpen(false)
+      resetForm()
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to save address.", variant: "destructive" })
     }
-
-    setIsAddDialogOpen(false)
-    resetForm()
   }
 
   const handleEdit = (address: Address) => {
@@ -132,25 +94,26 @@ export function AddressBook() {
     setIsAddDialogOpen(true)
   }
 
-  const handleDelete = (addressId: string) => {
-    setAddresses((prev) => prev.filter((addr) => addr.id !== addressId))
-    toast({
-      title: "Address deleted",
-      description: "The address has been removed from your address book.",
-    })
+  const handleDelete = async (addressId: string) => {
+    try {
+      await AddressesApi.delete(addressId, token || undefined)
+      const res = await AddressesApi.list(token || undefined)
+      setAddresses(res || [])
+      toast({ title: "Address deleted", description: "The address has been removed from your address book." })
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete address.", variant: "destructive" })
+    }
   }
 
-  const handleSetDefault = (addressId: string) => {
-    setAddresses((prev) =>
-      prev.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === addressId,
-      })),
-    )
-    toast({
-      title: "Default address updated",
-      description: "Your default address has been changed.",
-    })
+  const handleSetDefault = async (addressId: string) => {
+    try {
+      await AddressesApi.update(addressId, { isDefault: true }, token || undefined)
+      const res = await AddressesApi.list(token || undefined)
+      setAddresses(res || [])
+      toast({ title: "Default address updated", description: "Your default address has been changed." })
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to set default address.", variant: "destructive" })
+    }
   }
 
   const resetForm = () => {

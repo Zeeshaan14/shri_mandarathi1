@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/lib/store"
 import { Package, MapPin, CreditCard, User } from "lucide-react"
 import Link from "next/link"
+import { OrdersApi, AddressesApi } from "@/lib/api"
 
 interface RecentOrder {
   id: string
@@ -34,49 +35,49 @@ export function AccountOverview() {
     savedAddresses: 0,
   })
 
+  const token = useAuthStore((s) => s.token)
   useEffect(() => {
-    // Mock data - replace with actual API calls
-    setRecentOrders([
-      {
-        id: "1",
-        status: "DELIVERED",
-        total: 450.0,
-        createdAt: "2024-01-15T10:30:00Z",
-        items: [
-          {
-            id: "1",
-            quantity: 2,
-            variant: {
-              product: { name: "Coconut Oil" },
-              size: "500ml",
-            },
-          },
-        ],
-      },
-      {
-        id: "2",
-        status: "SHIPPED",
-        total: 320.0,
-        createdAt: "2024-01-10T14:20:00Z",
-        items: [
-          {
-            id: "2",
-            quantity: 1,
-            variant: {
-              product: { name: "Wheat Flour" },
-              size: "1kg",
-            },
-          },
-        ],
-      },
-    ])
+    const fetchData = async () => {
+      try {
+        const [ordersRes, addressesRes]: any[] = await Promise.all([
+          OrdersApi.list(token || undefined),
+          AddressesApi.list(token || undefined),
+        ])
+        const orders = (ordersRes || [])
+          .map((o: any) => ({
+            id: o.id,
+            status: o.status,
+            total: typeof o.total === "string" ? Number(o.total) : o.total,
+            createdAt: o.createdAt,
+            items: (o.items || []).map((it: any) => ({
+              id: it.id,
+              quantity: it.quantity,
+              variant: {
+                product: { name: it.variant.product?.name || "" },
+                size: it.variant.size,
+              },
+            })),
+          }))
+          .slice(0, 5)
+        setRecentOrders(orders)
 
-    setStats({
-      totalOrders: 12,
-      totalSpent: 5420.0,
-      savedAddresses: 2,
-    })
-  }, [])
+        const totalSpent = ordersRes?.reduce((sum: number, o: any) => {
+          const t = typeof o.total === "string" ? Number(o.total) : o.total
+          return sum + (Number.isFinite(t) ? t : 0)
+        }, 0) || 0
+
+        setStats({
+          totalOrders: ordersRes?.length || 0,
+          totalSpent,
+          savedAddresses: addressesRes?.length || 0,
+        })
+      } catch (e) {
+        setRecentOrders([])
+        setStats({ totalOrders: 0, totalSpent: 0, savedAddresses: 0 })
+      }
+    }
+    fetchData()
+  }, [token])
 
   const getStatusColor = (status: string) => {
     switch (status) {
