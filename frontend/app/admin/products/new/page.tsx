@@ -35,11 +35,43 @@ export default function NewProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token) return
+    
+    // Client-side validation
+    if (!name.trim()) {
+      alert("Product name is required")
+      return
+    }
+    if (!description.trim()) {
+      alert("Product description is required")
+      return
+    }
+    if (!categoryId) {
+      alert("Please select a category")
+      return
+    }
+    
+    // Validate variations
+    for (let i = 0; i < variations.length; i++) {
+      const v = variations[i]
+      if (!v.size.trim()) {
+        alert(`Variation ${i + 1}: Size is required`)
+        return
+      }
+      if (!v.price || Number(v.price) <= 0) {
+        alert(`Variation ${i + 1}: Price must be greater than 0`)
+        return
+      }
+      if (!v.stock || Number(v.stock) < 0) {
+        alert(`Variation ${i + 1}: Stock cannot be negative`)
+        return
+      }
+    }
+    
     setIsSubmitting(true)
     try {
       const form = new FormData()
       form.append("name", name)
-      form.append("description", description)
+      form.append("description", description || "") // Ensure empty string is sent
       form.append("categoryId", categoryId)
       // variations as JSON string that backend can parse
       form.append("variations", JSON.stringify(
@@ -89,7 +121,13 @@ export default function NewProductPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Textarea 
+                id="description" 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                required 
+                placeholder="Enter product description"
+              />
             </div>
             <div className="space-y-2">
               <Label>Category</Label>

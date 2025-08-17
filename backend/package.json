@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsc && node dist/index.js",
-    "build": "tsc",
+    "build": "tsc -b",
     "start": "node dist/index.js",
     "test-imagekit": "node test-imagekit.js"
   },
