@@ -1,32 +1,8 @@
 import type { Request, Response } from "express";
 import { prisma1 } from "../utils/prisma.js";
-import cloudinary, { CLOUDINARY_ENABLED } from "../utils/cloudinary.js";
+import { IMAGEKIT_ENABLED, uploadToImageKit } from "../utils/imagekit.js";
 import fs from "fs";
 import path from "path";
-
-// Upload image to Cloudinary with timeout safeguard
-const uploadToCloudinary = async (fileBuffer: Buffer, folder: string, timeoutMs = 15000): Promise<any> => {
-  const uploadPromise = new Promise((resolve, reject) => {
-    // @ts-ignore
-    const stream = (cloudinary as any).uploader.upload_stream(
-      { folder },
-      (error: any, result: any) => {
-        if (error) reject(error);
-        else resolve(result);
-      }
-    );
-    stream.end(fileBuffer);
-  });
-
-  const timeoutPromise = new Promise((_, reject) => {
-    const id = setTimeout(() => {
-      clearTimeout(id);
-      reject(new Error("Cloudinary upload timed out"));
-    }, timeoutMs);
-  });
-
-  return Promise.race([uploadPromise, timeoutPromise]);
-};
 
 // Create Product
 export const createProduct = async (req: Request, res: Response) => {
@@ -47,11 +23,16 @@ export const createProduct = async (req: Request, res: Response) => {
 
     // Upload main product image if provided
     if (req.file) {
+      console.log(`📁 Processing image upload: ${req.file.originalname} (${req.file.size} bytes)`);
+      
       try {
-        if (CLOUDINARY_ENABLED) {
-          const result: any = await uploadToCloudinary(req.file.buffer, "products");
-          imageUrl = result.secure_url;
+        if (IMAGEKIT_ENABLED) {
+          console.log('🖼️ Using ImageKit for image upload');
+          const result: any = await uploadToImageKit(req.file.buffer, req.file.originalname, "products");
+          imageUrl = result.url;
+          console.log(`✅ Image uploaded to ImageKit: ${imageUrl}`);
         } else {
+          console.log('💾 Using local storage for image upload');
           // Local file path (served from /uploads)
           // @ts-ignore multer adds path when using diskStorage
           const localPath: string | undefined = (req.file as any).path;
@@ -61,22 +42,40 @@ export const createProduct = async (req: Request, res: Response) => {
           const fileName = localPath.split("uploads").pop()?.replace(/^[/\\]/, "");
           const baseUrl = `${req.protocol}://${req.get("host")}`;
           imageUrl = `${baseUrl}/uploads/${fileName}`;
+          console.log(`✅ Image saved locally: ${imageUrl}`);
         }
       } catch (e: any) {
-        console.error("Cloudinary upload failed", e?.message || e);
-        // Fallback to local disk save even if Cloudinary is enabled
-        try {
-          const uploadDir = path.join(process.cwd(), "uploads");
-          if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-          const ext = path.extname(req.file.originalname) || ".bin";
-          const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-          const fullPath = path.join(uploadDir, fileName);
-          await fs.promises.writeFile(fullPath, req.file.buffer);
-          const baseUrl = `${req.protocol}://${req.get("host")}`;
-          imageUrl = `${baseUrl}/uploads/${fileName}`;
-        } catch (diskErr: any) {
-          console.error("Local upload fallback failed", diskErr?.message || diskErr);
-          return res.status(500).json({ message: "Image upload failed" });
+        console.error("❌ Primary upload method failed:", e?.message || e);
+        
+        // Only run fallback if ImageKit was enabled and failed
+        if (IMAGEKIT_ENABLED) {
+          console.log('🔄 ImageKit failed, attempting local storage fallback...');
+          try {
+            const uploadDir = path.join(process.cwd(), "uploads");
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+            
+            const ext = path.extname(req.file.originalname) || ".bin";
+            const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+            const fullPath = path.join(uploadDir, fileName);
+            
+            await fs.promises.writeFile(fullPath, req.file.buffer);
+            const baseUrl = `${req.protocol}://${req.get("host")}`;
+            imageUrl = `${baseUrl}/uploads/${fileName}`;
+            
+            console.log(`✅ Fallback local upload successful: ${imageUrl}`);
+          } catch (diskErr: any) {
+            console.error("❌ Local upload fallback also failed:", diskErr?.message || diskErr);
+            return res.status(500).json({ 
+              message: "Image upload failed - both ImageKit and local storage failed",
+              error: diskErr?.message || "Unknown error"
+            });
+          }
+        } else {
+          // If local storage was the primary method and it failed, return error
+          return res.status(500).json({ 
+            message: "Local image upload failed",
+            error: e?.message || "Unknown error"
+          });
         }
       }
     }
@@ -107,7 +106,7 @@ export const createProduct = async (req: Request, res: Response) => {
       });
       if (existing.length > 0) {
         return res.status(400).json({
-          message: `The following SKUs already exist: ${existing.map(e => e.sku).join(", ")}`,
+          message: `The following SKUs already exist: ${existing.map((e: any) => e.sku).join(", ")}`,
         });
       }
     }
@@ -116,6 +115,9 @@ export const createProduct = async (req: Request, res: Response) => {
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
     }
+
+    // Log the final imageUrl that will be saved to database
+    console.log(`💾 Saving product to database with imageUrl: ${imageUrl}`);
 
     const product = await prisma1.product.create({
       data: {
@@ -173,14 +175,49 @@ export const updateProduct = async (req: Request, res: Response) => {
 
     if (!id) return res.status(400).json({ message: "Product ID is required" });
 
-    let newImageUrl = imageUrl;
+    let newImageUrl = imageUrl; // Default to existing imageUrl from request body
+    
     if (req.file) {
-      const result: any = await uploadToCloudinary(req.file.buffer, "products");
-      newImageUrl = result.secure_url;
+      console.log(`📁 Processing image update: ${req.file.originalname} (${req.file.size} bytes)`);
+      
+      try {
+        if (IMAGEKIT_ENABLED) {
+          console.log('🖼️ Using ImageKit for image update');
+          const result: any = await uploadToImageKit(req.file.buffer, req.file.originalname, "products");
+          newImageUrl = result.url;
+          console.log(`✅ Image updated on ImageKit: ${newImageUrl}`);
+        } else {
+          console.log('💾 Using local storage for image update');
+          // Local file path (served from /uploads)
+          const uploadDir = path.join(process.cwd(), "uploads");
+          if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+          
+          const ext = path.extname(req.file.originalname) || ".bin";
+          const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+          const fullPath = path.join(uploadDir, fileName);
+          
+          await fs.promises.writeFile(fullPath, req.file.buffer);
+          const baseUrl = `${req.protocol}://${req.get("host")}`;
+          newImageUrl = `${baseUrl}/uploads/${fileName}`;
+          console.log(`✅ Image updated locally: ${newImageUrl}`);
+        }
+      } catch (e: any) {
+        console.error("❌ Image update failed:", e?.message || e);
+        return res.status(500).json({ 
+          message: "Image update failed",
+          error: e?.message || "Unknown error"
+        });
+      }
+    } else {
+      // No new file uploaded, keep existing imageUrl
+      console.log(`📷 No new image uploaded, keeping existing imageUrl: ${newImageUrl}`);
     }
 
+    // Log the final newImageUrl that will be saved to database
+    console.log(`💾 Updating product in database with newImageUrl: ${newImageUrl}`);
+
     const existingVariants = await prisma1.productVariant.findMany({ where: { productId: id } });
-    const existingVariantIds = existingVariants.map(v => v.id);
+    const existingVariantIds = existingVariants.map((v: any) => v.id);
 
     const referencedOrderVariants = await prisma1.orderItem.findMany({
       where: { variantId: { in: existingVariantIds } },
@@ -191,17 +228,17 @@ export const updateProduct = async (req: Request, res: Response) => {
       select: { variantId: true },
     });
     const referencedVariantIds = new Set([
-      ...referencedOrderVariants.map(v => v.variantId),
-      ...referencedCartVariants.map(v => v.variantId),
+      ...referencedOrderVariants.map((v: any) => v.variantId),
+      ...referencedCartVariants.map((v: any) => v.variantId),
     ]);
 
     type Variant = { size: string; price: number; stock: number; sku?: string; imageUrl?: string };
     const incomingBySku: Record<string, Variant> = Object.fromEntries(
-      ((variations || []) as Variant[]).filter(v => v.sku).map(v => [v.sku as string, v])
+      ((variations || []) as Variant[]).filter((v: Variant) => v.sku).map((v: Variant) => [v.sku as string, v])
     );
-    const toDelete = existingVariants.filter(v => !referencedVariantIds.has(v.id) && (!v.sku || !incomingBySku[v.sku]));
-    const toUpdate = existingVariants.filter(v => referencedVariantIds.has(v.id) && v.sku && incomingBySku[v.sku]);
-    const toCreate = (variations || []).filter((v: Variant) => !v.sku || !existingVariants.some(ev => ev.sku === v.sku));
+    const toDelete = existingVariants.filter((v: any) => !referencedVariantIds.has(v.id) && (!v.sku || !incomingBySku[v.sku]));
+    const toUpdate = existingVariants.filter((v: any) => referencedVariantIds.has(v.id) && v.sku && incomingBySku[v.sku]);
+    const toCreate = (variations || []).filter((v: Variant) => !v.sku || !existingVariants.some((ev: any) => ev.sku === v.sku));
 
     for (const v of toDelete) {
       await prisma1.productVariant.delete({ where: { id: v.id } });
@@ -264,7 +301,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
       where: { productId: id },
       select: { id: true },
     });
-    const variantIds = variants.map(v => v.id);
+    const variantIds = variants.map((v: any) => v.id);
 
     // Clear from carts first (safe to delete)
     if (variantIds.length > 0) {
@@ -286,7 +323,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
         select: { id: true, orderId: true, order: { select: { status: true } } },
       });
       if (activeOrderRefs.length > 0) {
-        const blockingOrders = activeOrderRefs.map(ref => ({ orderId: ref.orderId, status: ref.order?.status })).filter(Boolean);
+        const blockingOrders = activeOrderRefs.map((ref: any) => ({ orderId: ref.orderId, status: ref.order?.status })).filter(Boolean);
         return res.status(409).json({
           message: "Cannot delete product: It has active order history. Consider disabling/hiding it instead.",
           blockingOrders,

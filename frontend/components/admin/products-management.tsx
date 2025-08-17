@@ -28,6 +28,7 @@ export function ProductsManagement() {
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [addImageFile, setAddImageFile] = useState<File | null>(null)
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
 
   const [productForm, setProductForm] = useState({
     name: "",
@@ -99,17 +100,33 @@ export function ProductsManagement() {
         price: parseFloat(v.price),
         stock: parseInt(v.stock, 10),
       }))
-      await ProductsApi.updateProduct(editingProduct.id, {
-        name: productForm.name,
-        description: productForm.description,
-        categoryId: productForm.categoryId,
-        imageUrl: productForm.imageUrl,
-        variations,
-      }, token || undefined)
+      
+      if (editImageFile) {
+        // If there's a new image file, use multipart update
+        const form = new FormData()
+        form.append("name", productForm.name)
+        form.append("description", productForm.description)
+        form.append("categoryId", productForm.categoryId)
+        form.append("variations", JSON.stringify(variations))
+        form.append("image", editImageFile)
+        
+        await ProductsApi.updateProductMultipart(editingProduct.id, form, token || undefined)
+      } else {
+        // If no new image file, use regular update (keep existing imageUrl)
+        await ProductsApi.updateProduct(editingProduct.id, {
+          name: productForm.name,
+          description: productForm.description,
+          categoryId: productForm.categoryId,
+          imageUrl: productForm.imageUrl,
+          variations,
+        }, token || undefined)
+      }
+      
       toast.success("Product updated successfully!")
       setIsEditDialogOpen(false)
       setEditingProduct(null)
       resetForm()
+      setEditImageFile(null)
       loadData()
     } catch (error: any) {
       toast.error(error?.message || "Failed to update product")
@@ -119,6 +136,7 @@ export function ProductsManagement() {
   // When opening edit dialog, prefill form
   const openEditDialog = (product: Product) => {
     setEditingProduct(product)
+    setEditImageFile(null) // Clear any previous image file
     setProductForm({
       name: product.name,
       description: product.description || "",
@@ -163,6 +181,8 @@ export function ProductsManagement() {
         },
       ],
     })
+    setAddImageFile(null)
+    setEditImageFile(null)
   }
 
   const addVariation = () => {
@@ -615,6 +635,20 @@ export function ProductsManagement() {
                 onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
                 placeholder="Enter image URL"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-imageFile">Upload New Image (Optional)</Label>
+              <Input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setEditImageFile(e.target.files?.[0] || null)} 
+              />
+              {editImageFile && (
+                <p className="text-sm text-gray-600">
+                  New image will replace the current one: {editImageFile.name}
+                </p>
+              )}
             </div>
 
             {/* Variations */}

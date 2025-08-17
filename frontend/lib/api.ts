@@ -73,6 +73,22 @@ export const ProductsApi = {
     }
     return res.json()
   },
+  
+  // Multipart update using FormData (supports image upload)
+  updateProductMultipart: async (id: string, formData: FormData, token?: string) => {
+    const res = await fetch(`${API_URL}/api/products/${id}`, {
+      method: "PUT",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      } as any,
+      body: formData,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => "")
+      throw new Error(text || `Request failed with status ${res.status}`)
+    }
+    return res.json()
+  },
   updateProduct: (id: string, product: any, token?: string) =>
     apiFetch(`/api/products/${id}`, { method: "PUT", body: product, token }),
   deleteProduct: (id: string, token?: string) =>

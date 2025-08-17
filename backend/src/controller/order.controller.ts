@@ -28,7 +28,7 @@ export const createOrder = async (req: Request, res: Response) => {
   }
 
   try {
-    const order = await prisma1.$transaction(async (tx) => {
+    const order = await prisma1.$transaction(async (tx: any) => {
       let total = 0;
       const orderItemsData: any[] = [];
 
@@ -102,7 +102,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
   }
 
   try {
-    const updatedOrder = await prisma1.$transaction(async (tx) => {
+    const updatedOrder = await prisma1.$transaction(async (tx: any) => {
       const order = await tx.order.findUnique({
         where: { id },
         include: { items: true }, // include items to access order.items

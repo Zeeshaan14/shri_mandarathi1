@@ -1,11 +1,11 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { CLOUDINARY_ENABLED } from "../utils/cloudinary.js";
-// When Cloudinary is enabled, keep files in memory for streaming upload
+import { IMAGEKIT_ENABLED } from "../utils/imagekit.js";
+// When ImageKit is enabled, keep files in memory for streaming upload
 // Otherwise, persist to local uploads folder so we can serve them
 let storage;
-if (CLOUDINARY_ENABLED) {
+if (IMAGEKIT_ENABLED) {
     storage = multer.memoryStorage();
 }
 else {
