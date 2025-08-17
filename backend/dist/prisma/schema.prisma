@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(CUSTOMER)
+  orders    Order[]
+  cart      Cart?
+  addresses Address[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+
+model Product {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  category    Category       @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  imageUrl    String?
+  variations  ProductVariant[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ProductVariant {
+  id          String    @id @default(uuid())
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   String
+  size        String    // e.g. "250ml", "500ml", "1L"
+  price       Decimal   @db.Decimal(10, 2)
+  stock       Int
+  sku         String?    // SKU code for inventory
+  imageUrl    String?   // Different images for variations
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  products  Product[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  status     OrderStatus @default(PENDING)
+  total      Decimal     @db.Decimal(10, 2)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  items      OrderItem[]
+
+  // Optional links to saved addresses
+  shippingAddress   Address? @relation("OrderShippingAddress", fields: [shippingAddressId], references: [id])
+  shippingAddressId String?
+  billingAddress    Address? @relation("OrderBillingAddress", fields: [billingAddressId], references: [id])
+  billingAddressId  String?
+
+  // Shipping snapshot (copied at order time)
+  shippingFullName   String?
+  shippingPhone      String?
+  shippingLine1      String?
+  shippingLine2      String?
+  shippingCity       String?
+  shippingState      String?
+  shippingPostalCode String?
+  shippingCountry    String?
+}
+
+model OrderItem {
+  id         String         @id @default(uuid())
+  order      Order          @relation(fields: [orderId], references: [id])
+  orderId    String
+  variant    ProductVariant @relation(fields: [variantId], references: [id])
+  variantId  String
+  quantity   Int
+  price      Decimal        @db.Decimal(10, 2) // Price at purchase time
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String     @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id         String         @id @default(uuid())
+  cart       Cart           @relation(fields: [cartId], references: [id])
+  cartId     String
+  variant    ProductVariant @relation(fields: [variantId], references: [id])
+  variantId  String
+  quantity   Int
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([cartId, variantId]) // prevent same variant twice in one cart
+}
+
+
+model Address {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  label       String?
+  fullName    String
+  phone       String
+  line1       String
+  line2       String?
+  city        String
+  state       String
+  postalCode  String
+  country     String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ordersShipping Order[] @relation("OrderShippingAddress")
+  ordersBilling  Order[] @relation("OrderBillingAddress")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
