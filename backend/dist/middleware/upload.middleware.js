@@ -20,5 +20,9 @@ else {
         },
     });
 }
+// Configure multer to handle file uploads only
 export const upload = multer({ storage });
+// Create a middleware that handles both files and form fields
+// This will parse all fields (text and files) properly
+export const uploadWithFields = multer({ storage }).any();
 //# sourceMappingURL=upload.middleware.js.map

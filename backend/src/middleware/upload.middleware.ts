@@ -2,6 +2,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { IMAGEKIT_ENABLED } from "../utils/imagekit.js";
+import type { RequestHandler } from "express";
 
 // When ImageKit is enabled, keep files in memory for streaming upload
 // Otherwise, persist to local uploads folder so we can serve them
@@ -21,4 +22,9 @@ if (IMAGEKIT_ENABLED) {
   });
 }
 
+// Configure multer to handle file uploads only
 export const upload = multer({ storage });
+
+// Create a middleware that handles both files and form fields
+// This will parse all fields (text and files) properly
+export const uploadWithFields: RequestHandler = multer({ storage }).any();
