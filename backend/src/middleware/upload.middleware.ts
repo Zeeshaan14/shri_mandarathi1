@@ -1,13 +1,14 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { CLOUDINARY_ENABLED } from "../utils/cloudinary.js";
+import { IMAGEKIT_ENABLED } from "../utils/imagekit.js";
+import type { RequestHandler } from "express";
 
-// When Cloudinary is enabled, keep files in memory for streaming upload
+// When ImageKit is enabled, keep files in memory for streaming upload
 // Otherwise, persist to local uploads folder so we can serve them
 let storage: multer.StorageEngine;
 
-if (CLOUDINARY_ENABLED) {
+if (IMAGEKIT_ENABLED) {
   storage = multer.memoryStorage();
 } else {
   const uploadDir = path.join(process.cwd(), "uploads");
@@ -21,4 +22,9 @@ if (CLOUDINARY_ENABLED) {
   });
 }
 
+// Configure multer to handle file uploads only
 export const upload = multer({ storage });
+
+// Create a middleware that handles both files and form fields
+// This will parse all fields (text and files) properly
+export const uploadWithFields: RequestHandler = multer({ storage }).any();

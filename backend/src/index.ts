@@ -9,6 +9,7 @@ import productRouter from "./routes/product.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import userRouter from "./routes/user.routes.js";
+import { testImageKitConnection, getImageKitStatus } from "./utils/imagekit.js";
 dotenv.config();
 const app = express();
 
@@ -20,12 +21,13 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
-// Serve local uploads if Cloudinary is not configured or for fallback
+// Serve local uploads if ImageKit is not configured or for fallback
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 
@@ -36,6 +38,27 @@ app.use("/api/orders", orderRouter);
 app.use("/api/cart", cartRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/users", userRouter);
+
+// ImageKit test endpoints
+app.get("/api/imagekit/status", (req, res) => {
+  res.json(getImageKitStatus());
+});
+
+app.get("/api/imagekit/test", async (req, res) => {
+  try {
+    const isConnected = await testImageKitConnection();
+    res.json({ 
+      success: isConnected, 
+      message: isConnected ? "ImageKit connection successful" : "ImageKit connection failed" 
+    });
+  } catch (error: any) {
+    res.status(500).json({ 
+      success: false, 
+      message: "ImageKit test failed", 
+      error: error.message 
+    });
+  }
+});
 
 app.get("/", (req, res) => {
   res.send("API is running...");
