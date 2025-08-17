@@ -46,9 +46,9 @@ export function About() {
 
           <div className="relative">
             <img
-              src="/placeholder-v1o6t.png"
+              src="/Screenshot 2025-08-14 210851.png size-40"
               alt="Traditional oil mill"
-              className="rounded-2xl shadow-lg w-full"
+              className="rounded-2xl shadow-lg h-12"
             />
             <div className="absolute -bottom-6 -right-6 bg-white rounded-lg p-4 shadow-lg">
               <p className="text-lg font-bold text-amber-600">FSSAI Certified</p>

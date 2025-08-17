@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsc && node dist/index.js",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "migrate-uploads": "node ./scripts/migrate-uploads-to-cloudinary.mjs",
+    "migrate-uploads:confirm": "node ./scripts/migrate-uploads-to-cloudinary.mjs --confirm",
+    "migrate-uploads:dry": "node ./scripts/migrate-uploads-to-cloudinary.mjs --dry"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
@@ -17,8 +20,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "next-cloudinary": "^6.16.0",
-    "prisma": "^6.13.0"
+    "next-cloudinary": "^6.16.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -27,6 +29,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.2.1",
+    "prisma": "^6.13.0",
     "typescript": "^5.9.2"
   }
 }
