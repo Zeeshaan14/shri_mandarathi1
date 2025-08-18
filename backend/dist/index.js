@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json());
 const allowedOrigins = [
     process.env.FRONTEND_ORIGIN || "http://localhost:3000",
-    "http://localhost:3001",
+    "https://shri-mandarathi-products.vercel.app",
 ];
 app.use(cors({
     origin: allowedOrigins,
