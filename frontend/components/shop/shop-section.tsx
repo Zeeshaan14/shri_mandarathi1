@@ -30,7 +30,12 @@ export function ShopSection() {
           ProductsApi.categories(),
         ])
 
-        const normalized: Product[] = (prods || []).map((p: any) => ({
+        // Normalize API response shape
+        const productArray: any[] = Array.isArray(prods)
+          ? prods
+          : prods?.products || prods?.data || []
+
+        const normalized: Product[] = (productArray || []).map((p: any) => ({
           ...p,
           variations: (p.variations || []).map((v: any) => ({
             ...v,
@@ -40,7 +45,7 @@ export function ShopSection() {
 
         setProducts(normalized)
         setFilteredProducts(normalized)
-        setCategories(cats || [])
+        setCategories(Array.isArray(cats) ? cats : cats?.categories || cats?.data || [])
       } catch (e) {
         console.error("Failed to load products/categories", e)
         setError("Could not load products. Please try again later.")
