@@ -377,7 +377,7 @@ export default function CheckoutPage() {
                     <Checkbox id="terms" checked={agreeToTerms} onCheckedChange={(v) => setAgreeToTerms(Boolean(v))} />
                     <Label htmlFor="terms" className="text-sm leading-relaxed">
                       I agree to the{" "}
-                      <Link href="/terms" className="text-amber-600 hover:text-amber-700">
+                      <Link href="/terms-of-service" className="text-amber-600 hover:text-amber-700">
                         Terms of Service
                       </Link>{" "}
                       and{" "}
