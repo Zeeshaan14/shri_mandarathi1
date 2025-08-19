@@ -7,10 +7,20 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CartSidebar } from "./shop/cart-sidebar"
 import { useAuthStore } from "@/lib/store"
+import { useRouter } from "next/navigation"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const { isAuthenticated, user, logout } = useAuthStore()
+  const router = useRouter()
+  const { isAuthenticated, user, logout: storeLogout } = useAuthStore()
+
+  const logout = () => {
+    try {
+      storeLogout()
+    } finally {
+      router.push('/')
+    }
+  }
 
   const navItems = [
     { href: "#home", label: "Home" },

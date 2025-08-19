@@ -20,7 +20,7 @@ import { toast } from "sonner"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { items, getTotalPrice, clearCart } = useCartStore()
+  const { items, getTotalPrice, clearCart, clearCartApi } = useCartStore()
   const { isAuthenticated, user, token } = useAuthStore() as any
   const [isLoading, setIsLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("cod")
@@ -154,6 +154,13 @@ export default function CheckoutPage() {
       }
 
       await OrdersApi.create(payload, token)
+
+      // Clear server-side cart if user is authenticated
+      try {
+        if (isAuthenticated && user?.id && clearCartApi) {
+          await clearCartApi(user.id)
+        }
+      } catch {}
 
       clearCart()
       toast.success("Order placed successfully!")
@@ -363,7 +370,7 @@ export default function CheckoutPage() {
                 </CardContent>
               </Card>
 
-              {/* Terms and Conditions */}
+              {/*  and Conditions */}
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-start space-x-2">
@@ -374,9 +381,9 @@ export default function CheckoutPage() {
                         Terms of Service
                       </Link>{" "}
                       and{" "}
-                      <Link href="/privacy" className="text-amber-600 hover:text-amber-700">
+                      <a href="/privacy-policy" className="text-blue-500 underline">
                         Privacy Policy
-                      </Link>
+                      </a>
                       . I understand that this is a Cash on Delivery order and payment will be collected upon delivery.
                     </Label>
                   </div>

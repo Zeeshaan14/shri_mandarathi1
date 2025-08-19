@@ -179,14 +179,14 @@ export default function RegisterPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="terms" checked={acceptTerms} onCheckedChange={setAcceptTerms} />
+                <Checkbox id="terms" checked={acceptTerms} onCheckedChange={(checked) => setAcceptTerms(checked === true)} />
                 <Label htmlFor="terms" className="text-sm">
                   I agree to the{" "}
                   <Link href="/terms" className="text-amber-600 hover:text-amber-700">
                     Terms of Service
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="text-amber-600 hover:text-amber-700">
+                  <Link href="/privacy-policy" className="text-blue-500 underline">
                     Privacy Policy
                   </Link>
                 </Label>

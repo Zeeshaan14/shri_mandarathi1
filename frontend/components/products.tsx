@@ -69,10 +69,12 @@ export function Products() {
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full bg-amber-600 hover:bg-amber-700">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Call for Pricing
-                  </Button>
+                  <a href="tel:+919008496222" className="w-full block">
+                    <Button className="w-full bg-amber-600 hover:bg-amber-700">
+                      <Phone className="mr-2 h-4 w-4" />
+                      Call for Pricing
+                    </Button>
+                  </a>
                 </div>
               </CardContent>
             </Card>
@@ -102,7 +104,7 @@ export function Products() {
             </div>
             <div className="rounded-lg overflow-hidden shadow-lg">
               <img
-                src="/coconut-clipart.png"
+                src="/coconut-oil-bottle.png"
                 alt="Fresh coconuts"
                 className="w-full h-64 object-contain bg-gradient-to-br from-green-50 to-amber-50 p-4"
               />

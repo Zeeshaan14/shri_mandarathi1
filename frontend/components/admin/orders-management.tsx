@@ -319,7 +319,9 @@ export default function OrdersManagement() {
                           </DialogTrigger>
                           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
-                              <DialogTitle>Order Details - #{order.id.slice(-8).toUpperCase()}</DialogTitle>
+                              <DialogTitle>
+                                Order Details - {selectedOrder?.user?.name || order.user?.name || "Unknown Customer"}
+                              </DialogTitle>
                             </DialogHeader>
                             {selectedOrder && (
                               <div className="space-y-6">

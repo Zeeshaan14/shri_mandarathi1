@@ -197,7 +197,7 @@ export function OrderHistory() {
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <h3 className="font-semibold text-lg">Order {order.id}</h3>
+                          <h3 className="font-semibold text-lg">Order — {order.items?.[0]?.variant?.product?.name || "Product"}</h3>
                           <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                         </div>
 
@@ -261,7 +261,7 @@ export function OrderHistory() {
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                             <DialogHeader>
-                              <DialogTitle>Order Details - {order.id}</DialogTitle>
+                              <DialogTitle>Order Details - {useAuthStore.getState().user?.name || "Customer"}</DialogTitle>
                               <DialogDescription>Complete information about your order</DialogDescription>
                             </DialogHeader>
 

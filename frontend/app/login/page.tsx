@@ -137,7 +137,16 @@ export default function LoginPage() {
         </Card>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>By signing in, you agree to our Terms of Service and Privacy Policy</p>
+          <p>
+            By signing in, you agree to our{" "}
+            <Link href="/terms-of-service" className="text-blue-500 underline">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" className="text-blue-500 underline">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
     </div>

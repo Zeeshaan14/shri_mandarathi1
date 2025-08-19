@@ -30,6 +30,12 @@ export function CartSidebar() {
     }
   }, [isAuthenticated, user?.id, fetchCart])
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      clearCart()
+    }
+  }, [isAuthenticated, clearCart])
+
   const handleDecrease = async (variantId: string, quantity: number) => {
     const item = items.find((i) => i.variantId === variantId)
     if (!item) return

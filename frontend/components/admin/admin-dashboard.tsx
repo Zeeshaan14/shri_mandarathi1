@@ -11,6 +11,8 @@ import UsersManagement from "./users-management"
 import { CategoriesManagement } from "./categories-management"
 import { ProductsApi, OrdersApi, UsersApi } from "@/lib/api"
 import { useAuthStore } from "@/lib/store"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -156,10 +158,15 @@ export function AdminDashboard() {
                 <p className="text-sm text-gray-600">Manage your products, orders, and customers</p>
               </div>
             </div>
-            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-              <Settings className="h-3 w-3 mr-1" />
-              Admin Panel
-            </Badge>
+            <div className="flex items-center space-x-3">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                <Settings className="h-3 w-3 mr-1" />
+                Admin Panel
+              </Badge>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/">Back to Home</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
