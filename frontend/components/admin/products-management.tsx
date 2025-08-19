@@ -52,11 +52,18 @@ export function ProductsManagement() {
 
   const loadData = async () => {
     try {
+      console.log("[v0] Loading products and categories...")
       const [productsData, categoriesData] = await Promise.all([ProductsApi.list(), ProductsApi.categories()])
-      setProducts(productsData || [])
-      setCategories(categoriesData || [])
+      console.log("[v0] Products data:", productsData)
+      console.log("[v0] Categories data:", categoriesData)
+
+      setProducts(Array.isArray(productsData) ? productsData : [])
+      setCategories(Array.isArray(categoriesData) ? categoriesData : [])
     } catch (error) {
+      console.error("[v0] Error loading data:", error)
       toast.error("Failed to load data")
+      setProducts([])
+      setCategories([])
     } finally {
       setLoading(false)
     }
@@ -66,13 +73,11 @@ export function ProductsManagement() {
 
   const handleAddProduct = async () => {
     try {
-      // Convert price and stock to numbers for each variation
       const variations = productForm.variations.map((v) => ({
         ...v,
-        price: parseFloat(v.price),
-        stock: parseInt(v.stock, 10),
+        price: Number.parseFloat(v.price),
+        stock: Number.parseInt(v.stock, 10),
       }))
-      // Build multipart form; backend expects field name "image" for the file
       const form = new FormData()
       form.append("name", productForm.name)
       form.append("description", productForm.description)
@@ -97,31 +102,33 @@ export function ProductsManagement() {
     try {
       const variations = productForm.variations.map((v) => ({
         ...v,
-        price: parseFloat(v.price),
-        stock: parseInt(v.stock, 10),
+        price: Number.parseFloat(v.price),
+        stock: Number.parseInt(v.stock, 10),
       }))
-      
+
       if (editImageFile) {
-        // If there's a new image file, use multipart update
         const form = new FormData()
         form.append("name", productForm.name)
         form.append("description", productForm.description)
         form.append("categoryId", productForm.categoryId)
         form.append("variations", JSON.stringify(variations))
         form.append("image", editImageFile)
-        
+
         await ProductsApi.updateProductMultipart(editingProduct.id, form, token || undefined)
       } else {
-        // If no new image file, use regular update (keep existing imageUrl)
-        await ProductsApi.updateProduct(editingProduct.id, {
-          name: productForm.name,
-          description: productForm.description,
-          categoryId: productForm.categoryId,
-          imageUrl: productForm.imageUrl,
-          variations,
-        }, token || undefined)
+        await ProductsApi.updateProduct(
+          editingProduct.id,
+          {
+            name: productForm.name,
+            description: productForm.description,
+            categoryId: productForm.categoryId,
+            imageUrl: productForm.imageUrl,
+            variations,
+          },
+          token || undefined,
+        )
       }
-      
+
       toast.success("Product updated successfully!")
       setIsEditDialogOpen(false)
       setEditingProduct(null)
@@ -133,10 +140,9 @@ export function ProductsManagement() {
     }
   }
 
-  // When opening edit dialog, prefill form
   const openEditDialog = (product: Product) => {
     setEditingProduct(product)
-    setEditImageFile(null) // Clear any previous image file
+    setEditImageFile(null)
     setProductForm({
       name: product.name,
       description: product.description || "",
@@ -220,13 +226,15 @@ export function ProductsManagement() {
     })
   }
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || product.categoryId === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+  const filteredProducts = Array.isArray(products)
+    ? products.filter((product) => {
+        const matchesSearch =
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesCategory = selectedCategory === "all" || product.categoryId === selectedCategory
+        return matchesSearch && matchesCategory
+      })
+    : []
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -248,7 +256,6 @@ export function ProductsManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Products Management</h2>
@@ -266,7 +273,6 @@ export function ProductsManagement() {
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
-              {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Product Name *</Label>
@@ -313,7 +319,6 @@ export function ProductsManagement() {
                 <Input type="file" accept="image/*" onChange={(e) => setAddImageFile(e.target.files?.[0] || null)} />
               </div>
 
-              {/* Variations */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-lg font-semibold">Product Variations</Label>
@@ -401,7 +406,6 @@ export function ProductsManagement() {
         </Dialog>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -433,7 +437,6 @@ export function ProductsManagement() {
         </CardContent>
       </Card>
 
-      {/* Products Table */}
       <Card>
         <CardHeader>
           <CardTitle>Products ({filteredProducts.length})</CardTitle>
@@ -520,14 +523,23 @@ export function ProductsManagement() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(product)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => openEditDialog(product)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-      {/* View Product Dialog */}
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -544,9 +556,7 @@ export function ProductsManagement() {
                 <div>
                   <h3 className="text-xl font-bold">{viewingProduct.name}</h3>
                   <p className="text-gray-600 mb-2">{viewingProduct.description}</p>
-                  <Badge variant="outline">
-                    {categories.find((c) => c.id === viewingProduct.categoryId)?.name}
-                  </Badge>
+                  <Badge variant="outline">{categories.find((c) => c.id === viewingProduct.categoryId)?.name}</Badge>
                   <div className="text-xs text-gray-400 mt-2">
                     Created: {new Date(viewingProduct.createdAt).toLocaleString("en-IN")}
                   </div>
@@ -567,7 +577,11 @@ export function ProductsManagement() {
                         {v.sku && <div className="text-xs text-gray-400">SKU: {v.sku}</div>}
                       </div>
                       {v.imageUrl && (
-                        <img src={v.imageUrl} alt={v.size} className="h-12 w-12 object-contain rounded border" />
+                        <img
+                          src={v.imageUrl || "/placeholder.svg"}
+                          alt={v.size}
+                          className="h-12 w-12 object-contain rounded border"
+                        />
                       )}
                     </div>
                   ))}
@@ -578,14 +592,12 @@ export function ProductsManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Product Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
-            {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Product Name *</Label>
@@ -639,19 +651,12 @@ export function ProductsManagement() {
 
             <div className="space-y-2">
               <Label htmlFor="edit-imageFile">Upload New Image (Optional)</Label>
-              <Input 
-                type="file" 
-                accept="image/*" 
-                onChange={(e) => setEditImageFile(e.target.files?.[0] || null)} 
-              />
+              <Input type="file" accept="image/*" onChange={(e) => setEditImageFile(e.target.files?.[0] || null)} />
               {editImageFile && (
-                <p className="text-sm text-gray-600">
-                  New image will replace the current one: {editImageFile.name}
-                </p>
+                <p className="text-sm text-gray-600">New image will replace the current one: {editImageFile.name}</p>
               )}
             </div>
 
-            {/* Variations */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-lg font-semibold">Product Variations</Label>
@@ -737,19 +742,8 @@ export function ProductsManagement() {
           </div>
         </DialogContent>
       </Dialog>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
+
+export default ProductsManagement

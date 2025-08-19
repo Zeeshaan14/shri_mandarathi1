@@ -58,7 +58,7 @@ interface Order {
   shippingCountry?: string
 }
 
-export function OrdersManagement() {
+export default function OrdersManagement() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -68,28 +68,33 @@ export function OrdersManagement() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const token = useAuthStore.getState().token;
-        const orders = await OrdersApi.list(token || undefined);
-        setOrders(orders);
+        const token = useAuthStore.getState().token
+        const orders = await OrdersApi.list(token || undefined)
+        console.log("[v0] Fetched orders:", orders)
+        setOrders(Array.isArray(orders) ? orders : [])
       } catch (error) {
-        toast.error("Failed to fetch orders");
+        console.error("[v0] Error fetching orders:", error)
+        toast.error("Failed to fetch orders")
+        setOrders([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchOrders();
-  }, []);
+    }
+    fetchOrders()
+  }, [])
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     try {
-      const token = useAuthStore.getState().token;
-      await OrdersApi.updateStatus(orderId, newStatus, token || undefined);
-      setOrders(orders => orders.map(order => order.id === orderId ? { ...order, status: newStatus as any } : order));
-      toast.success(`Order status updated to ${newStatus}`);
+      const token = useAuthStore.getState().token
+      await OrdersApi.updateStatus(orderId, newStatus, token || undefined)
+      setOrders((orders) =>
+        orders.map((order) => (order.id === orderId ? { ...order, status: newStatus as any } : order)),
+      )
+      toast.success(`Order status updated to ${newStatus}`)
     } catch (error: any) {
-      toast.error("Failed to update order status");
+      toast.error("Failed to update order status")
     }
   }
 
@@ -177,7 +182,11 @@ export function OrdersManagement() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {[
-          { status: "PENDING", count: orders.filter((o) => o.status === "PENDING").length, color: "text-yellow-600" },
+          {
+            status: "PENDING",
+            count: orders.filter((o) => o.status === "PENDING").length,
+            color: "text-yellow-600",
+          },
           { status: "PAID", count: orders.filter((o) => o.status === "PAID").length, color: "text-blue-600" },
           { status: "SHIPPED", count: orders.filter((o) => o.status === "SHIPPED").length, color: "text-purple-600" },
           {

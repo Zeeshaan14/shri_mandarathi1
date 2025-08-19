@@ -25,12 +25,24 @@ export function ShopSection() {
       setLoading(true)
       setError("")
       try {
-        const [prods, cats] = await Promise.all([
-          ProductsApi.list(),
-          ProductsApi.categories(),
-        ])
+        console.log("[v0] Starting to load products and categories...")
+        const [prods, cats] = await Promise.all([ProductsApi.list(), ProductsApi.categories()])
 
-        const normalized: Product[] = (prods || []).map((p: any) => ({
+        console.log("[v0] Raw products response:", prods)
+        console.log("[v0] Raw categories response:", cats)
+
+        // Backend returns { status: true, products: [...] } format
+        let productArray: any[] = []
+        if (Array.isArray(prods)) {
+          productArray = prods
+        } else if (prods && typeof prods === "object") {
+          // Handle { status: true, products: [...] } format from backend
+          productArray = prods.products || prods.data || []
+        }
+
+        console.log("[v0] Extracted product array:", productArray)
+
+        const normalized: Product[] = (productArray || []).map((p: any) => ({
           ...p,
           variations: (p.variations || []).map((v: any) => ({
             ...v,
@@ -38,11 +50,24 @@ export function ShopSection() {
           })),
         }))
 
+        console.log("[v0] Normalized products:", normalized)
+
+        let categoryArray: any[] = []
+        if (Array.isArray(cats)) {
+          categoryArray = cats
+        } else if (cats && typeof cats === "object") {
+          categoryArray = cats.categories || cats.data || []
+        }
+
+        console.log("[v0] Extracted categories:", categoryArray)
+
         setProducts(normalized)
         setFilteredProducts(normalized)
-        setCategories(cats || [])
+        setCategories(categoryArray)
+
+        console.log("[v0] Successfully loaded", normalized.length, "products and", categoryArray.length, "categories")
       } catch (e) {
-        console.error("Failed to load products/categories", e)
+        console.error("[v0] Failed to load products/categories", e)
         setError("Could not load products. Please try again later.")
       }
       setLoading(false)
@@ -103,6 +128,14 @@ export function ShopSection() {
         {!loading && error && (
           <div className="text-center py-12">
             <p className="text-red-500 text-lg">{error}</p>
+            <p className="text-sm text-gray-400 mt-2">Check browser console for detailed error information</p>
+          </div>
+        )}
+
+        {!loading && !error && products.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No products available</p>
+            <p className="text-sm text-gray-400 mt-2">Check browser console for API response details</p>
           </div>
         )}
 
@@ -144,7 +177,7 @@ export function ShopSection() {
           </Select>
         </div>
 
-        {!loading && !error && (
+        {!loading && !error && products.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -152,7 +185,7 @@ export function ShopSection() {
           </div>
         )}
 
-        {!loading && !error && filteredProducts.length === 0 && (
+        {!loading && !error && products.length > 0 && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
             <Button

@@ -7,11 +7,28 @@ import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react"
 import { useCartStore, useAuthStore } from "@/lib/store"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
+import { useEffect } from "react"
 
 export function CartSidebar() {
-  const { items, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart, fetchCart, updateCartItemApi, removeCartItemApi, clearCartApi } =
-    useCartStore()
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    getTotalItems,
+    getTotalPrice,
+    clearCart,
+    fetchCart,
+    updateCartItemApi,
+    removeCartItemApi,
+    clearCartApi,
+  } = useCartStore()
   const { user, isAuthenticated } = useAuthStore()
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchCart(user.id)
+    }
+  }, [isAuthenticated, user?.id, fetchCart])
 
   const handleDecrease = async (variantId: string, quantity: number) => {
     const item = items.find((i) => i.variantId === variantId)
@@ -143,7 +160,7 @@ export function CartSidebar() {
                   <Button asChild className="w-full bg-amber-600 hover:bg-amber-700">
                     <Link href="/checkout">Proceed to Checkout</Link>
                   </Button>
-                  <Button variant="outline" className="w-full bg-transparent" onClick={clearCart}>
+                  <Button variant="outline" className="w-full bg-transparent" onClick={handleClear}>
                     Clear Cart
                   </Button>
                 </div>
