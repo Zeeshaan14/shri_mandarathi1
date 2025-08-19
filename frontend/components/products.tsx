@@ -106,7 +106,7 @@ export function Products() {
               <img
                 src="/coconut-oil-bottle.png"
                 alt="Fresh coconuts"
-                className="w-full h-64 object-contain bg-gradient-to-br from-green-50 to-amber-50 p-4"
+                className="w-full h-64 object-cover"
               />
             </div>
           </div>
