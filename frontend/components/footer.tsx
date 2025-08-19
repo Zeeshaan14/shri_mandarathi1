@@ -95,7 +95,7 @@ export function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-sm">© 2024 Shri Mandarathi Products. All rights reserved.</p>
+            <p className="text-gray-400 text-sm">© 2025 Shri Mandarathi Products & 404Found developers. All rights reserved.</p>
             <div className="flex space-x-6 text-sm text-gray-400">
               <span>GST: 29BNGPM5441K1ZL</span>
               <span>FSSAI: 21224160000478</span>
