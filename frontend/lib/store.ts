@@ -62,10 +62,11 @@ export const useCartStore = create<CartStore>()(
         return items.reduce((total, item) => total + item.variant.price * item.quantity, 0)
       },
       fetchCart: async (userId: string) => {
-        const token = (useAuthStore.getState().token) || undefined
+        const token = useAuthStore.getState().token || undefined
         if (!token) return
         const result = await CartApi.get(userId, token)
-        const items = (result.items || []).map((ci: any) => ({
+        const cartData = result.cart || result // Handle both formats for backward compatibility
+        const items = (cartData.items || []).map((ci: any) => ({
           id: ci.id,
           variantId: ci.variantId,
           variant: {
@@ -77,7 +78,7 @@ export const useCartStore = create<CartStore>()(
         set({ items })
       },
       addToCartApi: async (userId: string, variantId: string, quantity: number) => {
-        const token = (useAuthStore.getState().token) || undefined
+        const token = useAuthStore.getState().token || undefined
         if (!token) return
         const res = await CartApi.add(variantId, quantity, token)
         if (res?.item) {
@@ -116,7 +117,7 @@ export const useCartStore = create<CartStore>()(
         }))
       },
       clearCartApi: async (userId: string) => {
-        const token = (useAuthStore.getState().token) || undefined
+        const token = useAuthStore.getState().token || undefined
         if (!token) return
         await CartApi.clear(userId, token)
         set({ items: [] })

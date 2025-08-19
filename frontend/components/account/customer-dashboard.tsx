@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { OrderHistory } from "./order-history"
-import { ProfileSettings } from "./profile-settings"
+//import { ProfileSettings } from "./profile-settings"
 import { AddressBook } from "./address-book"
 import { AccountOverview } from "./account-overview"
 import { User, Package, MapPin, Settings, ArrowLeft } from "lucide-react"
@@ -25,7 +25,7 @@ export function CustomerDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -38,10 +38,10 @@ export function CustomerDashboard() {
               <MapPin className="h-4 w-4" />
               <span className="hidden sm:inline">Addresses</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            {/* <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Settings</span>
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="overview">
@@ -55,12 +55,17 @@ export function CustomerDashboard() {
           <TabsContent value="addresses">
             <AddressBook />
           </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
 
-          <TabsContent value="settings">
+          {/* <TabsContent value="settings">
             <ProfileSettings />
           </TabsContent>
         </Tabs>
       </div>
     </div>
   )
-}
+} */}

@@ -1,49 +1,147 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Package, Users, ShoppingCart, TrendingUp, Settings } from "lucide-react"
-import { ProductsManagement } from "./products-management"
-import { OrdersManagement } from "./orders-management"
-import { UsersManagement } from "./users-management"
+import ProductsManagement from "./products-management"
+import OrdersManagement from "./orders-management"
+import UsersManagement from "./users-management"
 import { CategoriesManagement } from "./categories-management"
+import { ProductsApi, OrdersApi, UsersApi } from "@/lib/api"
+import { useAuthStore } from "@/lib/store"
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalUsers: 0,
+    revenue: 0,
+    recentOrders: [],
+    lowStockProducts: [],
+  })
+  const [loading, setLoading] = useState(true)
 
-  // Mock stats - replace with real API calls
-  const stats = [
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true)
+      try {
+        const token = useAuthStore.getState().token
+
+        // Fetch all data in parallel
+        const [products, orders, users] = await Promise.all([
+          ProductsApi.list(token),
+          OrdersApi.list(token),
+          UsersApi.list(token),
+        ])
+
+        console.log("[v0] Dashboard data:", { products, orders, users })
+
+        // ✅ Calculate revenue dynamically from order items
+        const totalRevenue = Array.isArray(orders)
+          ? orders.reduce((sum, order) => {
+              const orderTotal = Array.isArray(order.items)
+                ? order.items.reduce(
+                    (orderSum, item) => orderSum + (item.price || 0) * (item.quantity || 0),
+                    0
+                  )
+                : 0
+              return sum + orderTotal
+            }, 0)
+          : 0
+
+        // ✅ Recent orders (last 5) — only ID, customer, status
+        const recentOrders = Array.isArray(orders)
+          ? orders.slice(0, 5).map((order) => ({
+              id: order.id,
+              customerName: order.user?.name || "Unknown Customer",
+              status: order.status || "PENDING",
+            }))
+          : []
+
+        // Low stock products (assuming stock < 10)
+        const lowStockProducts = Array.isArray(products)
+          ? products
+              .filter((product) => {
+                const totalStock =
+                  product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) || 0
+                return totalStock < 10
+              })
+              .slice(0, 5)
+              .map((product) => ({
+                name: product.name,
+                stock:
+                  product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) || 0,
+              }))
+          : []
+
+        setStats({
+          totalProducts: Array.isArray(products) ? products.length : 0,
+          totalOrders: Array.isArray(orders) ? orders.length : 0,
+          totalUsers: Array.isArray(users) ? users.length : 0,
+          revenue: totalRevenue,
+          recentOrders,
+          lowStockProducts,
+        })
+      } catch (error) {
+        console.error("[v0] Error fetching dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  const statsCards = [
     {
       title: "Total Products",
-      value: "24",
-      change: "+2 this month",
+      value: loading ? "..." : stats.totalProducts.toString(),
+      change: `${stats.totalProducts} products`,
       icon: Package,
       color: "text-blue-600",
     },
     {
       title: "Total Orders",
-      value: "156",
-      change: "+12 this week",
+      value: loading ? "..." : stats.totalOrders.toString(),
+      change: `${stats.totalOrders} orders`,
       icon: ShoppingCart,
       color: "text-green-600",
     },
     {
       title: "Total Users",
-      value: "89",
-      change: "+5 this week",
+      value: loading ? "..." : stats.totalUsers.toString(),
+      change: `${stats.totalUsers} registered`,
       icon: Users,
       color: "text-purple-600",
     },
     {
       title: "Revenue",
-      value: "₹45,230",
-      change: "+8% from last month",
+      value: loading ? "..." : `₹${stats.revenue.toLocaleString()}`,
+      change: `Total revenue`,
       icon: TrendingUp,
       color: "text-amber-600",
     },
   ]
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800"
+      case "PAID":
+        return "bg-blue-100 text-blue-800"
+      case "SHIPPED":
+        return "bg-purple-100 text-purple-800"
+      case "DELIVERED":
+        return "bg-green-100 text-green-800"
+      case "CANCELLED":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,7 +177,7 @@ export function AdminDashboard() {
           <TabsContent value="overview" className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
+              {statsCards.map((stat, index) => (
                 <Card key={index}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
@@ -101,20 +199,28 @@ export function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium">Order #SM{1000 + i}</p>
-                          <p className="text-sm text-gray-600">Customer {i}</p>
+                    {loading ? (
+                      <div className="text-center py-4 text-gray-500">Loading recent orders...</div>
+                    ) : stats.recentOrders.length > 0 ? (
+                      stats.recentOrders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">#{order.id.slice(-8).toUpperCase()}</p>
+                            <p className="text-sm text-gray-600">{order.customerName}</p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={`text-xs ${getStatusColor(order.status)}`}>
+                              {order.status}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">₹{(Math.random() * 1000 + 500).toFixed(0)}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {i === 1 ? "Pending" : i === 2 ? "Shipped" : "Delivered"}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">No recent orders</div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -125,21 +231,26 @@ export function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { name: "Coconut Oil 500ml", stock: 5 },
-                      { name: "Tejaswi Deepam Oil 250ml", stock: 3 },
-                      { name: "Coconut Oil 1L", stock: 8 },
-                    ].map((product, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-gray-600">Stock running low</p>
+                    {loading ? (
+                      <div className="text-center py-4 text-gray-500">Loading stock information...</div>
+                    ) : stats.lowStockProducts.length > 0 ? (
+                      stats.lowStockProducts.map((product, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-sm text-gray-600">Stock running low</p>
+                          </div>
+                          <Badge variant="destructive" className="text-xs">
+                            {product.stock} left
+                          </Badge>
                         </div>
-                        <Badge variant="destructive" className="text-xs">
-                          {product.stock} left
-                        </Badge>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">All products well stocked</div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

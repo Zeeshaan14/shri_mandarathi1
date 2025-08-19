@@ -31,7 +31,7 @@ interface User {
   }>
 }
 
-export function UsersManagement() {
+export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -45,9 +45,12 @@ export function UsersManagement() {
       try {
         const token = useAuthStore.getState().token
         const users = await UsersApi.list(token)
-        setUsers(users)
+        console.log("[v0] Fetched users:", users)
+        setUsers(Array.isArray(users) ? users : [])
       } catch (error: any) {
+        console.error("[v0] Error fetching users:", error)
         toast.error("Failed to fetch users")
+        setUsers([])
       } finally {
         setLoading(false)
       }
